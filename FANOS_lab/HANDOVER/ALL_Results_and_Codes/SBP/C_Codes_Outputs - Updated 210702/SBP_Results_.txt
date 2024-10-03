@@ -1,0 +1,24 @@
+Results for LR
+Test ME: 0.07323293924852455
+Test Std: 20.35650700764318
+Test MAE: 16.702781188057045
+Average Inference Time: 0.0
+=========================================
+Results for RF
+Test ME: 0.012605194591683232
+Test Std: 17.819279721524055
+Test MAE: 14.077058669054384
+Average Inference Time: 5584.368775490847
+=========================================
+Results for SVM
+Test ME: 5.266989281680197
+Test Std: 20.37621784623289
+Test MAE: 16.921456645774114
+Average Inference Time: 0.0
+=========================================
+Results for DT
+Test ME: 0.06822030761877793
+Test Std: 18.325903298000853
+Test MAE: 14.488141063009135
+Average Inference Time: 94.94451294697903
+=========================================

@@ -1,0 +1,18 @@
+Results for MAP LR Arduino
+Test ME: 0.06351065162383944
+Test Std: 12.02346796944703
+Test MAE: 9.657459705314542
+Average Inference Time: 73.59764772835057
+=========================================
+Results for MAP SVM Arduino
+Test ME: -4.676800455271731
+Test Std: 12.051265696139271
+Test MAE: 10.979346870626875
+Average Inference Time: 73.09797970217205
+=========================================
+Results for MAP DT Arduino
+Test ME: 0.025332713655519413
+Test Std: 10.973292312972381
+Test MAE: 8.511097266361514
+Average Inference Time: 37.977046381485344
+=========================================

@@ -1,0 +1,4 @@
+gcc -o LR.so -shared -fPIC -O2 LR.c
+gcc -o SVM.so -shared -fPIC -O2 SVM.c
+gcc -o DT.so -shared -fPIC -O2 DT.c
+gcc -o RF.so -shared -fPIC -O2 RF.c

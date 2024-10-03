@@ -1,0 +1,18 @@
+Results for DBP LR Arduino
+Test ME: -0.007958377181344609
+Test Std: 9.82750139890367
+Test MAE: 7.591223683748534
+Average Inference Time: 73.14047235132315
+=========================================
+Results for DBP SVM Arduino
+Test ME: 1.2209565426706899
+Test Std: 9.834782477705335
+Test MAE: 7.378922901715516
+Average Inference Time: 73.81542255524992
+=========================================
+Results for DBP DT Arduino
+Test ME: -0.03382388035880873
+Test Std: 9.322979114503628
+Test MAE: 6.975881669420069
+Average Inference Time: 40.76638527933226
+=========================================

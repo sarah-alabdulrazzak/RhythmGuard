@@ -1,0 +1,85 @@
+
+
+** Inference Framework: 
+
+- Big guys like Google (TensorFlow Lite), Microsoft (Embedded Learning Library), and STMicroelectronics (STM32 Cube.AI) are paying more attention to NN & DL on the edge. 
+Those ML algorithms works great on powerful device but, due to the constraints and limitations of MCUs, simple tranditional algorithms may achieve better performance on MCUs.
+
+TensorFlow Lite. 2021. [Online]. Available: https://www.tensorflow.org/lite/
+Embedded Learning Library. 2021. [Online]. Available: https://microsoft.github.io/ELL/
+STM32Cube.AI 2020, [Online]. Available: https://www.st.com/en/embedded-software/x-cube-ai.html 
+
+----------------------------------------------------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------------------------------------------------
+
+** Online/industrial inference solutions: 
+- Edge Impulse: mainly focused on NN, they allow for customized processing blocks though. 
+- Qeexo: commercial, not free nor open-source. Limited to certain applications (mainly classification).
+
+----------------------------------------------------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------------------------------------------------
+** Initiatives by Makers, Developers, and Researchers:
+
+
+- m2cgen (very popular, supports MANY classifiers and regressors!): 
+(Model 2 Code Generator) - is a lightweight library which provides an easy way to transpile trained statistical models into a native code (Python, C, Java, Go, JavaScript, Visual Basic, C#, PowerShell, R, PHP, Dart, Haskell, Ruby, F#).
+
+m2cgen. 2020. [Online]. Available: https://github.com/BayesWitnesses/m2cgen
+---------------------------------------------------------------
+
+- Edge-Learning-Machine:
+A framework that performs ML inference on edge devices using models created, trained, and optimized on a Desktop environment. The framework provides a platform-independent C language implementation. It supports Linear SVM, Decision Tree, Random Forest, K-NN, TripleES, and ANN (by exploiting the X-Cube-AI package). 
+The model has to be trained using their module Desk-LM so that it produces configuration files that are forwarded to their other module Edge-LM which does the inference. 
+
+https://github.com/Edge-Learning-Machine
+
+---------------------------------------------------------------
+
+- sklearn-porter (a popular one!): 
+transpile trained scikit-learn estimators to C, Java, JavaScript and other languages. 
+It supports many types of classifiers, but only one regressor (NN MLP). 
+Not very useful for our use case but it looks promising if we would like to change its existing classifier codes into regressor-equivalent.
+
+@unpublished{skpodamo,
+  author = {Darius Morawiec},
+  title = {sklearn-porter},
+  note = {Transpile trained scikit-learn estimators to C, Java, JavaScript and others},
+  url = {https://github.com/nok/sklearn-porter}
+}
+
+---------------------------------------------------------------
+
+- emlearn (much less popular than sklearn): 
+Machine learning for microcontroller and embedded systems. Train in Python, then do inference on any device with a C99 compiler.
+Only few classifiers are supported.
+
+@misc{emlearn,
+  author       = {Jon Nordby},
+  title        = {{emlearn: Machine Learning inference engine for 
+                   Microcontrollers and Embedded Devices}},
+  month        = mar,
+  year         = 2019,
+  doi          = {10.5281/zenodo.2589394},
+  url          = {https://doi.org/10.5281/zenodo.2589394}
+}
+
+---------------------------------------------------------------
+
+- MicroML, similar to emlearn, only supports classifiers. 
+---------------------------------------------------------------
+
+- uTensor
+Machine learning inference framework built on Tensorflow and optimized for Arm targets. A model is constructed and trained in Tensorflow. uTensor takes the model and produces a .cpp and .hpp file. These files contains the generated C++11 code needed for inferencing. 
+
+---------------------------------------------------------------
+
+- EmbML (Classifiers ONLY):
+A tool written in Python to automatically convert off-board-trained models into C++ source code files that can be compiled and executed in low-power microcontrollers. 
+
+L. Tsutsui da Silva, V. M. A. Souza, and G. E. A. P. A. Batista, “EmbML Tool: Supporting the use of supervised learning algorithms in low-cost
+embedded systems,” in Proc. IEEE 31st Int. Conf. Tools Artificial Intelligence (ICTAI), Nov. 2019, pp. 1633–1637. [Online]. Available: https://
+ieeexplore.ieee.org/document/8995408/
+
+=========================================================================================
+
+- micro-Python: requires a firmware to be installed on the MCU and it runs on the top of it. Not very efficient and probably not good for a realtime scenario (especially for capturing data and pre-processing)

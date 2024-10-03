@@ -1,0 +1,18 @@
+Results for SBP LR Arduino
+Test ME: 0.07325786023380236
+Test Std: 20.35652029661403
+Test MAE: 16.702810081440706
+Average Inference Time: 71.12662430048373
+=========================================
+Results for SBP SVM Arduino
+Test ME: 5.266976915531156
+Test Std: 20.376230333016647
+Test MAE: 16.921450622231387
+Average Inference Time: 71.39713554016883
+=========================================
+Results for SBP DT Arduino
+Test ME: 0.06816348481883402
+Test Std: 18.32586354288184
+Test MAE: 14.488088720569241
+Average Inference Time: 37.38632267855449
+=========================================

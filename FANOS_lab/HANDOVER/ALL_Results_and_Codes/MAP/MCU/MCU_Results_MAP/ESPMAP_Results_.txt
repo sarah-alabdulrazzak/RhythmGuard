@@ -1,0 +1,18 @@
+Results for MAP LR ESP
+Test ME: 0.0635068576373081
+Test Std: 12.023461695917364
+Test MAE: 9.657455911328013
+Average Inference Time: 4.285497486483923
+=========================================
+Results for MAP SVM ESP
+Test ME: -4.676800455271731
+Test Std: 12.05126707999074
+Test MAE: 10.97934876762014
+Average Inference Time: 4.222517310063549
+=========================================
+Results for MAP DT ESP
+Test ME: 0.025332713655519413
+Test Std: 10.973292312972381
+Test MAE: 8.511097266361514
+Average Inference Time: 2.687660058806791
+=========================================

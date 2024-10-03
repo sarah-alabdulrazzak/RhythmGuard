@@ -1,0 +1,24 @@
+Results for SBP LR PyBadge
+Test ME: 0.07327113918666209
+Test Std: 20.3565178057704
+Test MAE: 16.702810081440706
+Average Inference Time: 7.430238072654842
+=========================================
+Results for SBP SVM PyBadge
+Test ME: 5.26698165801432
+Test Std: 20.37623303016486
+Test MAE: 16.92145346772129
+Average Inference Time: 7.472730721805938
+=========================================
+Results for SBP DT PyBadge
+Test ME: 0.06816348481883402
+Test Std: 18.32586354288184
+Test MAE: 14.488088720569241
+Average Inference Time: 5.3893578677795695
+=========================================
+Results for SBP RF PyBadge
+Test ME: 0.012675483301240357
+Test Std: 17.81923631524671
+Test MAE: 14.077043796405741
+Average Inference Time: 317.4914161054728
+=========================================

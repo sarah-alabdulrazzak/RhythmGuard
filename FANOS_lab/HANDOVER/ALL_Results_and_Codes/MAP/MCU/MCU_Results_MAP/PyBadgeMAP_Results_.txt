@@ -1,0 +1,24 @@
+Results for MAP LR PyBadge
+Test ME: 0.0635068576373081
+Test Std: 12.023461695917364
+Test MAE: 9.657455911328013
+Average Inference Time: 7.442568528881722
+=========================================
+Results for MAP SVM PyBadge
+Test ME: -4.676800455271731
+Test Std: 12.05126707999074
+Test MAE: 10.97934876762014
+Average Inference Time: 7.415536374845869
+=========================================
+Results for MAP DT PyBadge
+Test ME: 0.025332713655519413
+Test Std: 10.973292312972381
+Test MAE: 8.511097266361514
+Average Inference Time: 5.878307882007019
+=========================================
+Results for MAP RF PyBadge
+Test ME: 0.024367144083291273
+Test Std: 10.754074042819434
+Test MAE: 8.341993146875291
+Average Inference Time: 325.31385753580577
+=========================================

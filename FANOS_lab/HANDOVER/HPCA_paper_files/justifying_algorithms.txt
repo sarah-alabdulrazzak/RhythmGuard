@@ -1,0 +1,28 @@
+https://www.thekerneltrip.com/machine/learning/computational-complexity-learning-algorithms/
+
+Why those algorithms? 
+
+SVM: 
+- trying to fit as many instances as possible in the street while limiting margin violations. 
+- in this usecase, it consumes the same resources (memory & processing power) as LR, but achieves better MAE.
+-SVM handles outliers better than LR.
+
+PR: cze LR may be underfitting the data. PR models nonlinearity using a polynomial equation. This is useful not only to model more complicated scenarios, but also to create new features out of the combinations, with different degrees, of the original features. 
+
+
+DT: 
+- Very powerful, can model complex models.
+- Does not require scaling and, therefore, saves computational complexity for MUC (also fast predictions) <now relate to using them in RF & AdaBoost>
+- To make a prediction using DT, you need to traverse the tree from root to leaf. At every node, only one feature is checked. Therefore, the complexity of the prediction is independent on the number of features. Also, at everynode half of the tree (assuming a balanced tree) is eleminated. Thus, the predictions are very fast as will be shown in the results. 
+= Problem: sensetive to the training data. Different training data results in a completely different tree. 
+Due to the stochastic approach Scikit-learn is using (randomly selecting a set of features to evaluate at each node). Even when using the same training data, every run may result into a different trained tree. 
+
+NOW TWO WAYS TO IMPROVE DT:
+-> using Ensemble (a group of predictors): 
+RF: It can limit the instability of DT by AVERAGING predictions over many trees.
+When using more predictors, the probability to make an accurate prediction becomes higher and higher. 
+Adaboost: Each predictor tries to correct its predecessor. From one predictor to the next, the instances with higher error gets higher weights so that next predictor can focus more on them and get them resolved. <this is sequential learning>
+
+
+
+ 

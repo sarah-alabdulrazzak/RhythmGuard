@@ -1,0 +1,50 @@
+
+From 2017's Paper -------------------------------------------------------------------------------------------------------------------------------------------
+DataBase: 5599 records of ECG, PPG, and ABP.
+
+1) Basic cleansing: 
+- Remove records < 10 minutes (10*60*125 = 75,000 samples).
+- Remove signals with very high BP (SBP >= 180  OR  DBP >= 130) or very low BP (SBP <= 80 OR DBP <= 60).
+The resulting database has 3663 records (about 1000 unique subjects). 
+
+2) Preprocessing:
+- Major sources of interference: 
+	A- Power-line noise: 50-60 Hz.
+	B- Respiration artifact: low frequency baseline.
+	C- Muscular activity: high-frequency, non-stationary noise. 
+- Preprocessing Steps: 
+	1- Upsample signals to 1Khz (to account for high-resolution ECG).
+	2- Decompose the signals using Discrete Wavelet Decomposition (DWT) with Daubechies 8 (db8) mother wavelet to 10 decomposition levels [23]. 
+	3- Eleminiate the decomposition coefficients corresponding to low-freq components (0 - 0.25 Hz) "baseline", 
+		and ultrahigh-freq (250-500 Hz) "power-line & muscular activity". Replace those components by zeros. 
+	4- Apply wavelet De-noising the remaining components using Rigrsure thresholding strategy ([24, 25]).
+	5- Recover cleaned signal by reconstructing the decomposition (wavelet reconstruction).
+
+3) Extracting Physiological Parameters (Feature Extraction)
+Note: MIMIC-II was NOT pre-processed. Also, ECG signal was originally sampled at 500Hz but then down-sampled to 125Hz which degrades accuracy. 
+Therefore, multiple feature vectors are extracted from different time windows within each record then avg out to reduce the error (like Gaussian noise).
+
+4) Dimensionality Reduction, using PCA, from 190 features down to 15 while preserving 98% of energy content of eigenvectors.
+
+=========================================================================================
+
+From 2015's Paper -------------------------------------------------------------------------------------------------------------------------------------------	
+Some steps are NEW and valuable (compared with those from 2017 .. but probably in 2017 they did both algorithms)
+1- Collection of a database with adequate sample size (may be they removed short records as in 2017).
+2- Smoothing all signals with a simple averaging filter. 
+3- Removing signals blocks with IRREGULAR and UNACCEPTABLE human blood pressure values (may be filtering very high & low, but what about irregularity??).
+4- Removing signal blocks with unacceptable heart rate (NEW! probably I can do that after detecting peaks and calculating HR).
+5- Removing signal blocks with SEVERE DISCONTINUITIES that were not resolved using the simple filter in 2. 
+6- Calculation of PPG signal AUTOCORRELATION to reflect similarities between successive pulses, then removing blocks with high alteration. 
+
+Started from MIMIC-II, ended up with 4254 records. 
+
+=========================================================================================
+What to do? 
+- Check the use of PTT, decide which features to extract from the signals. 
+- Do the Basic Cleansing step. 
+- Design the algorithm for extracting peaks, including/excluding some peaks, modifying indices, ... etc.
+- Save a new dataset of features-SBP-DBP.
+- Feed it to the ML models we already have. 
+Ask Hosney: should we use PTT? Feature-based? Interview? IEEE? Mitacs? Time-line? 
+

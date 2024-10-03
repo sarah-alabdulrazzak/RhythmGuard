@@ -1,0 +1,24 @@
+Results for DBP LR PyBadge
+Test ME: -0.007959325677977445
+Test Std: 9.827500406842674
+Test MAE: 7.591222735251901
+Average Inference Time: 7.467039742008916
+=========================================
+Results for DBP SVM PyBadge
+Test ME: 1.2209546456774243
+Test Std: 9.83478681688617
+Test MAE: 7.3789247987087805
+Average Inference Time: 7.499288627525372
+=========================================
+Results for DBP DT PyBadge
+Test ME: -0.03382388035880873
+Test Std: 9.322979114503628
+Test MAE: 6.975881669420069
+Average Inference Time: 6.0878307882007014
+=========================================
+Results for DBP RF PyBadge
+Test ME: -0.023594344173661803
+Test Std: 9.163022924168697
+Test MAE: 6.848753677425909
+Average Inference Time: 343.62088589585505
+=========================================
