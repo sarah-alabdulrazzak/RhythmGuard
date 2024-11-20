@@ -1,9 +1,10 @@
 import serial
 import csv
 import time
+import matplotlib.pyplot as plt
 
 # Step 1: Configure Serial Communication
-esp32_port = "COM5"  # Change this to your ESP32's port
+esp32_port = "COM4"  # Change this to your ESP32's port
 baud_rate = 115200
 try:
     ser = serial.Serial(esp32_port, baud_rate, timeout=1)
@@ -11,11 +12,9 @@ try:
 except Exception as e:
     print(f"Failed to open serial port {esp32_port}: {e}")
     exit()
-
 # Step 2: Read ECG Data from CSV
-input_csv = "C:/Users/marye/Downloads/fft_with_plotting/data.csv"  # Replace with your input file
-output_csv = "C:/Users/marye/Downloads/fft_with_plotting/fft_results.csv"
-
+input_csv = "C:/Users/kavya/Downloads/fft_with_plotting/data.csv"  # Replace with your input file
+output_csv = "C:/Users/kavya/Downloads/fft_with_plotting/fft_results.csv"
 print(f"Reading ECG data from {input_csv}...")
 ecg_data = []
 try:
@@ -30,22 +29,26 @@ try:
 except FileNotFoundError:
     print(f"Error: The file {input_csv} was not found.")
     exit()
-
 print(f"Total ECG data points read: {len(ecg_data)}")
-
 # Step 3: Send ECG Data to ESP32 in chunks
 SAMPLES = 128  # Must match ESP32 SAMPLES
 fft_results = []
 print(f"Sending ECG data to ESP32 in chunks of {SAMPLES}...")
 
+
+x = []
+y = []
+plt.figure()
+plt.xlabel("Frequency (Hz)")
+plt.ylabel("Magnitude ()")
+plt.title("FFT")
+
 for i in range(0, len(ecg_data), SAMPLES):
     chunk = ecg_data[i:i + SAMPLES]
-
     # Ensure the chunk has the required number of samples
     if len(chunk) < SAMPLES:
         print(f"Warning: Remaining data chunk has less than {SAMPLES} samples, skipping.")
         break
-
     print(f"Sending chunk {i//SAMPLES + 1} of ECG data to ESP32...")
     
     # Send chunk to ESP32
@@ -56,7 +59,6 @@ for i in range(0, len(ecg_data), SAMPLES):
         except Exception as e:
             print(f"Error while sending data to ESP32: {e}")
             break
-
     # Step 4: Receive FFT Results from ESP32
     fft_chunk = []
     print("Receiving FFT results from ESP32...")
@@ -66,11 +68,21 @@ for i in range(0, len(ecg_data), SAMPLES):
             try:
                 frequency, magnitude = map(float, line.split(","))
                 fft_chunk.append((frequency, magnitude))
+                x.append(frequency)
+                y.append(magnitude)
             except ValueError as e:
                 print(f"Warning: Could not parse FFT result line: {line}. Skipping this line.")
                 continue
-
+    plt.cla()
+    plt.plot(x,y)
+    plt.xlabel("Frequency (Hz)")
+    plt.ylabel("Magnitude")
+    plt.title("FFT")
+    plt.pause(0.1)
+    x = []
+    y = []
     fft_results.extend(fft_chunk)
+plt.close()
 
 # Step 5: Write FFT Results to Output CSV
 print(f"Writing FFT results to {output_csv}...")
