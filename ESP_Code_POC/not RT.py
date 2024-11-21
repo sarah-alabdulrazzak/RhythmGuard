@@ -61,9 +61,13 @@ for i in range(0, len(ecg_data), SAMPLES):
             break
     # Step 4: Receive FFT Results from ESP32
     fft_chunk = []
+    peaks_x = []
+    peaks_y = []
     print("Receiving FFT results from ESP32...")
     while len(fft_chunk) < SAMPLES // 2:
         line = ser.readline().decode().strip()
+        if line == "Printing peaks":
+            break        
         if line:
             try:
                 frequency, magnitude = map(float, line.split(","))
@@ -73,8 +77,24 @@ for i in range(0, len(ecg_data), SAMPLES):
             except ValueError as e:
                 print(f"Warning: Could not parse FFT result line: {line}. Skipping this line.")
                 continue
+    #peaks
+    while True:
+        line = ser.readline().decode().strip()
+        if line == "End":
+            break
+        if line:
+            try:
+                frequency, magnitude = map(float, line.split(","))
+                peaks_x.append(frequency) 
+                peaks_y.append(magnitude)
+            except ValueError as e:
+                print(f"Warning: Could not parse FFT result line: {line}. Skipping this line.")
+                continue     
+    print("\n", peaks_x)      
+    print("\n", peaks_y)      
     plt.cla()
-    plt.plot(x,y)
+    plt.plot(x,y, color = 'b')
+    plt.scatter(peaks_x, peaks_y, color='r')
     plt.xlabel("Frequency (Hz)")
     plt.ylabel("Magnitude")
     plt.title("FFT")

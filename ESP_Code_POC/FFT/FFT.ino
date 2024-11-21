@@ -11,6 +11,7 @@ float frequencies[SAMPLES/2];
 float magnitude[SAMPLES/2];
 float peak_frequencies[SAMPLES/2];
 float peak_magnitudes[SAMPLES/2];
+int peak_count;
 
 void setup() {
   Serial.begin(115200);
@@ -41,9 +42,8 @@ void loop() {
     }
 
     peaks();
-    int i = 0;
     Serial.println("Printing Peaks");
-    while (peak_magnitudes[i] != NULL) {
+    for (int i = 0; i < peak_count; i++) {
       Serial.print(peak_frequencies[i], 2);
       Serial.print(",");
       Serial.println(peak_magnitudes[i], 6); 
@@ -57,16 +57,10 @@ void loop() {
 void peaks() {
   int j = 0; //used to index peak arrays
   double prominence_threshold = 0.1; //can be changed
-  double base = 0;
   
   for (int i=1; i<SAMPLES/2 -2; i++) {
     if (magnitude[i] > magnitude[i-1] && magnitude[i] > magnitude[i+1]) {
-      if (magnitude[i - 1] > magnitude[i + 1]) {
-        base = magnitude[i - 1];
-      }
-      else {
-        base = magnitude[i + 1];
-      }
+      double base = fmax(magnitude[i - 1], magnitude[i + 1]);
       double prominence = magnitude[i] - base; // find relative height of peak wrt to adjacent points
 
       if (prominence > prominence_threshold) {
@@ -77,6 +71,7 @@ void peaks() {
 
     }
   }
+  peak_count = j;
 }
 
 
