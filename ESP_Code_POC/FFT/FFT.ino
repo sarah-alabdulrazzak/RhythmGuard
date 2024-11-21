@@ -59,7 +59,7 @@ void peaks() {
   double prominence_threshold = 0.1; //can be changed
   double base = 0;
   
-  for (int i=1; i<SAMPLES-2; i++) {
+  for (int i=1; i<SAMPLES/2 -2; i++) {
     if (magnitude[i] > magnitude[i-1] && magnitude[i] > magnitude[i+1]) {
       if (magnitude[i - 1] > magnitude[i + 1]) {
         base = magnitude[i - 1];
@@ -68,7 +68,7 @@ void peaks() {
         base = magnitude[i + 1];
       }
       double prominence = magnitude[i] - base; // find relative height of peak wrt to adjacent points
-      
+
       if (prominence > prominence_threshold) {
         peak_magnitudes[j] = magnitude[i];
         peak_frequencies[j] = frequencies[i];
