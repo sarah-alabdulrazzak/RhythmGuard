@@ -17,7 +17,7 @@ except Exception as e:
     print(f"Failed to open serial port {esp32_port}: {e}")
     exit()
 # Step 2: Read ECG Data from CSV
-input_csv = "data.csv"  # Replace with your input file
+input_csv = "mimic_perform_non_af_009_data.csv"  # Replace with your input file
 output_csv = "fft_results.csv"
 print(f"Reading ECG data from {input_csv}...")
 ecg_data = []
