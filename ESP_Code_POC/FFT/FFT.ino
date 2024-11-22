@@ -23,28 +23,28 @@ void loop() {
     // Step 1: Receive data from Python
     for (int i = 0; i < SAMPLES; i++) {
       while (!Serial.available()); // Wait for data
-      //vReal[i] = Serial.parseFloat(); // Read a float value
-      unfiltered[i] = Serial.parseFloat();
+      vReal[i] = Serial.parseFloat(); // Read a float value
+      //unfiltered[i] = Serial.parseFloat();
       vImag[i] = 0; // Imaginary part is 0
     }
-
+/*
     //1st order low pass filter w0 = 50 Hz
     //transfer function H = 50/(s+50)
     //b0 = 0.1667, b1 = 0.1667, a1 = −0.6667
-    float temp[SAMPLES];
-    temp[0] = 0.1667 * unfiltered[0];
+    double temp[SAMPLES]; //use temp to get the low pass filter outputs and then pass temp to the high pass filter
+    vReal[0] = 0.1667 * unfiltered[0];
     for (int i = 1; i < SAMPLES ; i++) {
-      temp[i] = -0.6667*temp[i-1] + 0.1667*unfiltered[i] + 0.1667*unfiltered[i-1]; //discrete transfer function
+      vReal[i] = -0.6667*vReal[i-1] + 0.1667*unfiltered[i] + 0.1667*unfiltered[i-1]; //discrete transfer function
     }
-  /*
+
     //1st order high pass for wc of 0.05 Hz
     //transfer function H = s / (s + (2*pi*wc)) = s / (s + 0.31416)
     //b0 = 2, b1 = -2, a1 = -1.3727
-    vReal[0] = 2 * temp[0];
+    vReal[0] = 1 * temp[0];
     for (int i = 1; i < SAMPLES ; i++) {
-      vReal[i] = -1.3727*vReal[i-1] + 2*temp[i] -2*temp[i-1]; //discrete transfer function
+      vReal[i] = -0.997489878*vReal[i-1] + 1*temp[i] -1*temp[i-1]; //discrete transfer function
     }
-  */
+*/    
 
     // Step 2: Perform FFT
     FFT.windowing(vReal, SAMPLES, FFT_WIN_TYP_HAMMING, FFT_FORWARD); // Apply window
