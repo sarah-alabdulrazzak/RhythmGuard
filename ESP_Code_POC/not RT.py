@@ -6,7 +6,7 @@ import pandas as pd
 import numpy as np
 
 # Step 1: Configure Serial Communication
-esp32_port = "COM3"  # Change this to your ESP32's port
+esp32_port = "COM4"  # Change this to your ESP32's port
 baud_rate = 115200
 SAMPLES = 1024  # Must match ESP32 SAMPLES
 fs=125
@@ -68,8 +68,8 @@ for i in range(0, len(ecg_data), SAMPLES):
     peaks_y = []
     print("Receiving FFT results from ESP32...")
 
-    resolution = fs/SAMPLES
-    x_linspace = np.linspace(0, fs / 2, num=SAMPLES // 2, endpoint=False)
+    #resolution = fs/SAMPLES
+    #x_linspace = np.linspace(0, fs / 2, num=SAMPLES // 2, endpoint=False)
 
     while len(fft_chunk) < SAMPLES // 2:
         line = ser.readline().decode().strip()
@@ -79,11 +79,13 @@ for i in range(0, len(ecg_data), SAMPLES):
             try:
                 frequency, magnitude = map(float, line.split(","))
                 fft_chunk.append((frequency, magnitude))
+                #print("\n", frequency)
                 x.append(frequency)
                 y.append(magnitude)
             except ValueError as e:
                 print(f"Warning: Could not parse FFT result line: {line}. Skipping this line.")
                 continue
+    print("\n", y)         
     #peaks
     while True:
         line = ser.readline().decode().strip()
@@ -97,12 +99,12 @@ for i in range(0, len(ecg_data), SAMPLES):
             except ValueError as e:
                 print(f"Warning: Could not parse FFT result line: {line}. Skipping this line.")
                 continue     
-    print("\n", peaks_x)      
-    print("\n", peaks_y)
+     
+    #print("\n", peaks_y)
 
   
     plt.cla()
-    plt.plot(x_linspace,y, color = 'b')
+    plt.plot(x, y, color = 'b')
     plt.scatter(peaks_x, peaks_y, color='r')
     plt.xlabel("Frequency (Hz)")
     plt.ylabel("Magnitude")
