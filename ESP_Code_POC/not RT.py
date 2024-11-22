@@ -2,10 +2,14 @@ import serial
 import csv
 import time
 import matplotlib.pyplot as plt
+import pandas as pd
+import numpy as np
 
 # Step 1: Configure Serial Communication
-esp32_port = "COM4"  # Change this to your ESP32's port
+esp32_port = "COM3"  # Change this to your ESP32's port
 baud_rate = 115200
+SAMPLES = 1024  # Must match ESP32 SAMPLES
+fs=125
 try:
     ser = serial.Serial(esp32_port, baud_rate, timeout=1)
     print(f"Serial communication established on {esp32_port} with baud rate {baud_rate}")
@@ -13,8 +17,8 @@ except Exception as e:
     print(f"Failed to open serial port {esp32_port}: {e}")
     exit()
 # Step 2: Read ECG Data from CSV
-input_csv = "C:/Users/kavya/Downloads/fft_with_plotting/data.csv"  # Replace with your input file
-output_csv = "C:/Users/kavya/Downloads/fft_with_plotting/fft_results.csv"
+input_csv = "data.csv"  # Replace with your input file
+output_csv = "fft_results.csv"
 print(f"Reading ECG data from {input_csv}...")
 ecg_data = []
 try:
@@ -31,7 +35,6 @@ except FileNotFoundError:
     exit()
 print(f"Total ECG data points read: {len(ecg_data)}")
 # Step 3: Send ECG Data to ESP32 in chunks
-SAMPLES = 128  # Must match ESP32 SAMPLES
 fft_results = []
 print(f"Sending ECG data to ESP32 in chunks of {SAMPLES}...")
 
@@ -55,7 +58,7 @@ for i in range(0, len(ecg_data), SAMPLES):
     for value in chunk:
         try:
             ser.write(f"{value}\n".encode())
-            time.sleep(0.01)  # Small delay to ensure data is sent
+            time.sleep(0.001)  # Small delay to ensure data is sent
         except Exception as e:
             print(f"Error while sending data to ESP32: {e}")
             break
@@ -64,6 +67,10 @@ for i in range(0, len(ecg_data), SAMPLES):
     peaks_x = []
     peaks_y = []
     print("Receiving FFT results from ESP32...")
+
+    resolution = fs/SAMPLES
+    x_linspace = np.linspace(0, fs / 2, num=SAMPLES // 2, endpoint=False)
+
     while len(fft_chunk) < SAMPLES // 2:
         line = ser.readline().decode().strip()
         if line == "Printing peaks":
@@ -91,12 +98,15 @@ for i in range(0, len(ecg_data), SAMPLES):
                 print(f"Warning: Could not parse FFT result line: {line}. Skipping this line.")
                 continue     
     print("\n", peaks_x)      
-    print("\n", peaks_y)      
+    print("\n", peaks_y)
+
+  
     plt.cla()
-    plt.plot(x,y, color = 'b')
+    plt.plot(x_linspace,y, color = 'b')
     plt.scatter(peaks_x, peaks_y, color='r')
     plt.xlabel("Frequency (Hz)")
     plt.ylabel("Magnitude")
+    plt.xlim([0,20])
     plt.title("FFT")
     plt.pause(0.1)
     x = []

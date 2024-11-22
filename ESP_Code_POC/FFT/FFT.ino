@@ -1,6 +1,6 @@
 #include <arduinoFFT.h> // Ensure the library is correctly installed
 
-#define SAMPLES 128          // Number of samples, must be a power of 2
+#define SAMPLES 1024          // Number of samples, must be a power of 2
 #define SAMPLING_FREQUENCY 125 // Sampling frequency in Hz
 
 ArduinoFFT<float> FFT;  // Declare FFT object for float type
