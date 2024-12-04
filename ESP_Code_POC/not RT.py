@@ -6,12 +6,12 @@ import pandas as pd
 import numpy as np
 
 # Step 1: Configure Serial Communication
-esp32_port = "COM4"  # Change this to your ESP32's port
+esp32_port = "COM3"  # Change this to your ESP32's port
 baud_rate = 115200
 SAMPLES = 1024  # Must match ESP32 SAMPLES
 fs=125
 try:
-    ser = serial.Serial(esp32_port, baud_rate, timeout=1)
+    ser = serial.Serial(esp32_port, baud_rate, timeout=2)
     print(f"Serial communication established on {esp32_port} with baud rate {baud_rate}")
 except Exception as e:
     print(f"Failed to open serial port {esp32_port}: {e}")
@@ -82,11 +82,11 @@ for i in range(0, len(ecg_data), SAMPLES):
                 #print("\n", frequency)
                 x.append(frequency)
                 y.append(magnitude)
-                print(magnitude)
+                #print(magnitude)
             except ValueError as e:
                 print(f"Warning: Could not parse FFT result line: {line}. Skipping this line.")
                 continue
-    print("\n", y)         
+    #print("\n", y)         
     #peaks
     while True:
         line = ser.readline().decode().strip()

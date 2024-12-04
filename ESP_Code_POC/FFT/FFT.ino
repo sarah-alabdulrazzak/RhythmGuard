@@ -13,6 +13,10 @@ float magnitude[SAMPLES/2];
 float peak_frequencies[SAMPLES/2];
 float peak_magnitudes[SAMPLES/2];
 int peak_count;
+unsigned long fft_old_time;
+unsigned long fft_elapsed_time;
+unsigned long peaks_old_time;
+unsigned long peaks_elapsed_time;
 
 void setup() {
   Serial.begin(115200);
@@ -45,13 +49,15 @@ void loop() {
       vReal[i] = -0.997489878*vReal[i-1] + 1*temp[i] -1*temp[i-1]; //discrete transfer function
     }
 */    
-
+    fft_old_time=millis();
     // Step 2: Perform FFT
     FFT.windowing(vReal, SAMPLES, FFT_WIN_TYP_HAMMING, FFT_FORWARD); // Apply window
     FFT.compute(vReal, vImag, SAMPLES, FFT_FORWARD); // Compute FFT
     FFT.complexToMagnitude(vReal, vImag, SAMPLES); // Compute magnitude
 
     float frequency_step = (SAMPLING_FREQUENCY/2.0) / (SAMPLES / 2);
+
+    fft_elapsed_time=millis()-fft_old_time;
 
     // Step 3: Send FFT results back to Python
     for (int i = 0; i < SAMPLES / 2; i++) { // Only positive frequencies
@@ -63,7 +69,12 @@ void loop() {
       //Serial.println(vReal[i], 6); //printed vReal just after high pass filter and it was filled with Nans
     }
 
+    peaks_old_time=millis();
     peaks();
+    peaks_elapsed_time=millis()-peaks_old_time;
+
+    
+
     Serial.println("Printing Peaks");
     for (int i = 0; i < peak_count; i++) {
       Serial.print(peak_frequencies[i], 2);
@@ -71,6 +82,15 @@ void loop() {
       Serial.println(peak_magnitudes[i], 6); 
       i+=1;
     }
+
+    
+
+    Serial.println("FFT calculation time (ms): ");
+    Serial.println(fft_elapsed_time);
+
+    Serial.println("Peaks calculation time (ms): ");
+    Serial.println(peaks_elapsed_time);
+
     Serial.println("End");
     
   }
