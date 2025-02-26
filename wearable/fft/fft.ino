@@ -1,14 +1,18 @@
 #include <Arduino.h>
 #include <cmath>
 
-#define BUFFER_SIZE 2048      // Increased buffer size
-#define CHUNK_SIZE 512        // Large FFT chunk size
-#define LOG2_CHUNK_SIZE 9     // log2(512) = 9
+
+#define BUFFER_SIZE 32 //2048      // Increased buffer size
+#define CHUNK_SIZE 16 //512        // Large FFT chunk size
+#define LOG2_CHUNK_SIZE 4 //9     // log2(512) = 9
 #define SAMPLING_FREQUENCY 100
 
 #ifndef PI
 #define PI 3.14159265358979323846
 #endif
+
+hw_timer_t *timer = NULL;
+volatile bool timerFlag = false;
 
 volatile float buffer[BUFFER_SIZE];
 volatile int writeIndex = 0;
@@ -61,17 +65,39 @@ void fft(float* vReal, int log2n) {
   }
 }
 
+void IRAM_ATTR onTimer() {
+  // This is the timer interrupt service routine
+  timerFlag = true; 
+
+}
+
+
 void setup() {
   Serial.begin(921600);
-
+  
   vReal = (float*)malloc(CHUNK_SIZE * sizeof(float));
   if (!vReal) {
     Serial.println("Memory allocation failed!");
     while (1);
   }
+
+  //Timer 1
+  timer = timerBegin(0, 80, true);  // Timer 0, prescaler 80
+  timerAttachInterrupt(timer, &onTimer, true);  // Attach interrupt
+  //triggers interrupt every 5 s
+  timerAlarmWrite(timer, 5000000, true);  // Set timer interval (in microseconds)
+  timerAlarmEnable(timer);  // Enable the timer
+
+  pinMode(5, OUTPUT);
 }
 
 void loop() {
+  if (timerFlag == true) {
+    digitalWrite(5, HIGH);
+    delay(100); 
+    digitalWrite(5, LOW);
+    timerFlag = false;
+  }
   if (Serial.available() > 0) {
     String rawData = Serial.readStringUntil('\n');
     buffer[writeIndex] = rawData.toDouble();
