@@ -1,4 +1,5 @@
 #include <arduinoFFT.h> // Ensure the library is correctly installed
+#include "Arduino.h"
 
 #define SAMPLES 1024          // Number of samples, must be a power of 2
 #define SAMPLING_FREQUENCY 125 // Sampling frequency in Hz
@@ -18,11 +19,40 @@ unsigned long fft_elapsed_time;
 unsigned long peaks_old_time;
 unsigned long peaks_elapsed_time;
 
+hw_timer_t *timer = NULL;  // Timer object
+volatile bool sendInterruptMessage = false;  // Flag for interrupt
+
+void IRAM_ATTR onTimer() {
+  sendInterruptMessage = true;  // Set flag inside ISR
+}
+
 void setup() {
   Serial.begin(115200);
+  while (!Serial) { delay(10); }
+
+  // Initialize Timer at 1s (1,000,000 µs)
+  timer = timerBegin(0, 80, true);  // 80 prescaler → 1 tick = 1µs
+  timerAttachInterrupt(timer, &onTimer, true);
+  timerAlarmWrite(timer, 10000000, true);  // Fire every 10,000,000µs (10s)
+  timerAlarmEnable(timer);  // Enable the alarm
+
+  Serial.println("[INFO] ESP32 Ready!");
 }
 
 void loop() {
+  // Echo received serial data
+  /*
+  if (Serial.available()) {
+    String incomingData = Serial.readStringUntil('\n');
+    Serial.println(incomingData);
+  }
+  */
+  // Send Interrupt Message Every 1s
+  if (sendInterruptMessage) {
+    Serial.println("this is the interrupt");
+    sendInterruptMessage = false;  // Reset flag
+  }
+  
   if (Serial.available() > 0) {
     // Step 1: Receive data from Python
     for (int i = 0; i < SAMPLES; i++) {
@@ -115,5 +145,3 @@ void peaks() {
   }
   peak_count = j;
 }
-
-
