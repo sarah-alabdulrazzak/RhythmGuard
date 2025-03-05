@@ -9,7 +9,7 @@ import time
 from collections import defaultdict
 
 
-arduino = serial.Serial(port='COM4', baudrate=921600, timeout=1) 
+arduino = serial.Serial(port='COM4', baudrate=115200, timeout=1) 
 time.sleep(2) 
 
 columns = defaultdict(list) # each value in each column is appended to a list

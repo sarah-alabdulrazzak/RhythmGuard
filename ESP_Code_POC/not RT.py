@@ -105,7 +105,7 @@ for i in range(0, len(ecg_data), SAMPLES):
      
     #print("\n", peaks_y)
 
-  
+
     plt.cla()
     plt.plot(x, y, color = 'b')
     plt.scatter(peaks_x, peaks_y, color='r')
@@ -117,8 +117,9 @@ for i in range(0, len(ecg_data), SAMPLES):
     x = []
     y = []
     fft_results.extend(fft_chunk)
-plt.close()
 
+plt.close()
+"""
 # Step 5: Write FFT Results to Output CSV
 print(f"Writing FFT results to {output_csv}...")
 try:
@@ -129,3 +130,4 @@ try:
     print(f"FFT results successfully written to {output_csv}")
 except Exception as e:
     print(f"Error while writing FFT results to file: {e}")
+"""
