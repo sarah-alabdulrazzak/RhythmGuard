@@ -20,12 +20,12 @@ volatile int writeIndex = 0;  // Write pointer for the buffer
 int peaks[SAMPLES/2];
 float widths[SAMPLES/2];
 int peakCount = 0;
-float height = 0.5;  // Minimum height to be considered a peak
-float threshold = 0.5;  // Minimum threshold for detection
-float distance = 0.5;  // Minimum distance between peaks
-float prominence = 0.5; // Minimum difference from neighbors
-float width = 0.5; // Placeholder for width calculation
-float rel_height = 0.3; // Relative height for width calculation
+float height = 0;  // Minimum height to be considered a peak
+float threshold = 0;  // Minimum threshold for detection
+float distance = 0;  // Minimum distance between peaks
+float prominence = 0.001; // Minimum difference from neighbors
+float width = 0.75; // Placeholder for width calculation
+float rel_height = 0.5; // Relative height for width calculation
 
 hw_timer_t *timer = NULL;  // Timer object
 volatile bool sampleData = false;  // Flag for interrupt
@@ -66,10 +66,11 @@ void setup() {
   while (!Serial) { delay(10); }
 
   // Initialize Timer at 1s (1,000,000 µs)
-  timer = timerBegin(0, 80, true);  // 80 prescaler → 1 tick = 1µs
-  timerAttachInterrupt(timer, &onTimer, true);
-  timerAlarmWrite(timer, INTERVAL_US, true);  // Fire every 10,000,000µs (10s)
-  timerAlarmEnable(timer);  // Enable the alarm
+  timer = timerBegin(1000000);  // 80 prescaler → 1 tick = 1µs
+  timerAttachInterrupt(timer, &onTimer);
+  //timerAlarmWrite(timer, 10000000, true);  // Fire every 10,000,000µs (10s)
+  //timerAlarmEnable(timer);  // Enable the alarm
+  timerAlarm(timer, 10000000, true, 0);
 
   memset(vReal, 0, sizeof(vReal));
 

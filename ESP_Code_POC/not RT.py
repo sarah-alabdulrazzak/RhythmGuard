@@ -6,7 +6,7 @@ import pandas as pd
 import numpy as np
 
 # Step 1: Configure Serial Communication
-esp32_port = "COM4"  # Change this to your ESP32's port
+esp32_port = "COM3"  # Change this to your ESP32's port
 baud_rate = 115200
 SAMPLES = 1024  # Must match ESP32 SAMPLES
 fs=125
@@ -17,8 +17,8 @@ except Exception as e:
     print(f"Failed to open serial port {esp32_port}: {e}")
     exit()
 # Step 2: Read ECG Data from CSV
-input_csv = r"C:/Users/kavya/OneDrive/Documents/GitHub/RhythmGuard/ESP_Code_POC/mimic_perform_non_af_009_data.csv"  # Replace with your input file
-output_csv = r"C:/Users/kavya/OneDrive/Documents/GitHub/RhythmGuard/ESP_Code_POC/fft_results.csv"
+input_csv = r"mimic_perform_non_af_009_data.csv"  # Replace with your input file
+output_csv = r"fft_results.csv"
 print(f"Reading ECG data from {input_csv}...")
 ecg_data = []
 try:

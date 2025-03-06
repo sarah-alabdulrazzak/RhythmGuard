@@ -31,10 +31,11 @@ void setup() {
   while (!Serial) { delay(10); }
 
   // Initialize Timer at 1s (1,000,000 µs)
-  timer = timerBegin(0, 80, true);  // 80 prescaler → 1 tick = 1µs
-  timerAttachInterrupt(timer, &onTimer, true);
-  timerAlarmWrite(timer, 10000000, true);  // Fire every 10,000,000µs (10s)
-  timerAlarmEnable(timer);  // Enable the alarm
+  timer = timerBegin(1000000);  // 80 prescaler → 1 tick = 1µs
+  timerAttachInterrupt(timer, &onTimer);
+  //timerAlarmWrite(timer, 10000000, true);  // Fire every 10,000,000µs (10s)
+  //timerAlarmEnable(timer);  // Enable the alarm
+  timerAlarm(timer, 10000000, true, 0);
 
   Serial.println("[INFO] ESP32 Ready!");
 }
