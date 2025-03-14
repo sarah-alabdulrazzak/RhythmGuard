@@ -14,6 +14,15 @@ float peak_frequencies[SAMPLES / 2];
 float peak_magnitudes[SAMPLES / 2];
 int peak_count = 0;
 
+int peaks[SAMPLES/2];
+float widths[SAMPLES/2];
+float height = 0;  // Minimum height to be considered a peak
+float threshold = 0;  // Minimum threshold for detection
+float distance = 0;  // Minimum distance between peaks
+float prominence = 0.001; // Minimum difference from neighbors
+float width = 0.75; // Placeholder for width calculation
+float rel_height = 0.5; // Relative height for width calculation
+
 TaskHandle_t FFTTaskHandle;   // FFT Task
 QueueHandle_t dataQueue;      // Queue for data transfer
 
@@ -46,7 +55,7 @@ void FFTTask(void *parameter) {
             }
 
             // Find Peaks
-            findPeaks();
+            findPeaks(magnitude, SAMPLES / 2, peaks, peak_count, height, threshold, distance, prominence, width, rel_height, widths);
 
             Serial.println("Printing Peaks");
             for (int i = 0; i < peak_count; i++) {
@@ -94,21 +103,40 @@ void loop() {
     xQueueOverwrite(dataQueue, &dataBuffer);
 }
 
-void findPeaks() {
-    int j = 0;
-    double threshold = 0.1;
+void findPeaks(float x[], int size, int peaks[], int &peak_count, float height, float threshold, int distance, float prominence, float width, float rel_height, float widths[]) {
+    peak_count = 0;  
+    int last_peak_index = -distance;  
 
-    for (int i = 1; i < SAMPLES / 2 - 1; i++) {
-        if (magnitude[i] > magnitude[i - 1] && magnitude[i] > magnitude[i + 1]) {
-            double base = fmax(magnitude[i - 1], magnitude[i + 1]);
-            double prominence = magnitude[i] - base;
+    for (int i = 2; i < size - 2; i++) {  // Check wider range to avoid false peaks
+        float current = x[i];
+        float prev1 = x[i - 1], prev2 = x[i - 2];
+        float next1 = x[i + 1], next2 = x[i + 2];
 
-            if (prominence > threshold) {
-                peak_magnitudes[j] = magnitude[i];
-                peak_frequencies[j] = frequencies[i];
-                j++;
+        // **More Strict Peak Condition**  
+        if (current > prev1 && current > next1 && 
+            current > prev2 && current > next2 &&  // Stronger peak condition
+            current >= height && current >= threshold &&
+            (current - prev1) > prominence && (current - next1) > prominence) {
+
+            // **Ensure minimum peak distance**
+            if (i - last_peak_index >= distance) {
+                last_peak_index = i;
+
+                peaks[peak_count] = i;
+                peak_frequencies[peak_count] = frequencies[i];
+                peak_magnitudes[peak_count] = current;
+
+                // **Compute width at relative height**
+                float peakHeight = current * rel_height;
+                int left = i, right = i;
+                while (left > 0 && x[left] > peakHeight) left--;
+                while (right < size - 1 && x[right] > peakHeight) right++;
+
+                widths[peak_count] = right - left;
+                peak_count++;
+
+                if (peak_count >= (size / 10)) break;  // Exit early if needed
             }
         }
     }
-    peak_count = j;
 }
