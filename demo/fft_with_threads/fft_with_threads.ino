@@ -10,15 +10,22 @@ float vReal[SAMPLES];  // Real part
 float vImag[SAMPLES];  // Imaginary part
 float frequencies[SAMPLES / 2];
 float magnitude[SAMPLES / 2];
+float invertedMagnitude[SAMPLES / 2]; // Needed for valley detection
 float peak_frequencies[SAMPLES / 2];
 float peak_magnitudes[SAMPLES / 2];
 int peak_count = 0;
+
+int valley_count = 0;
+int valleys[SAMPLES / 2];
+float valley_widths[SAMPLES / 2];
+float valley_frequencies[SAMPLES / 2];
+float valley_magnitudes[SAMPLES / 2];
 
 int peaks[SAMPLES/2];
 float widths[SAMPLES/2];
 float height = 0;  // Minimum height to be considered a peak
 float threshold = 0;  // Minimum threshold for detection
-float distance = 0;  // Minimum distance between peaks
+int distance = 2;  // Minimum distance between peaks
 float prominence = 0.001; // Minimum difference from neighbors
 float width = 0.75; // Placeholder for width calculation
 float rel_height = 0.5; // Relative height for width calculation
@@ -45,24 +52,43 @@ void FFTTask(void *parameter) {
 
             float frequency_step = (SAMPLING_FREQUENCY / 2.0) / (SAMPLES / 2);
 
-            // Print FFT Results
+            // Store FFT results
             for (int i = 0; i < SAMPLES / 2; i++) {  
                 frequencies[i] = i * frequency_step;
                 magnitude[i] = vReal[i];
+                invertedMagnitude[i] = -vReal[i]; // Invert for valley detection
+            }
+
+            // Print FFT Results
+            for (int i = 0; i < SAMPLES / 2; i++) {  
                 Serial.print(frequencies[i], 2);
                 Serial.print(",");
                 Serial.println(magnitude[i], 6);
             }
 
             // Find Peaks
-            findPeaks(magnitude, SAMPLES / 2, peaks, peak_count, height, threshold, distance, prominence, width, rel_height, widths);
+            findPeaks(magnitude, SAMPLES / 2, peaks, peak_count, height, threshold, distance, prominence, rel_height, widths);
 
             Serial.println("Printing Peaks");
             for (int i = 0; i < peak_count; i++) {
-                Serial.print(peak_frequencies[i], 2);
+                Serial.print(frequencies[peaks[i]], 2);
                 Serial.print(",");
-                Serial.println(peak_magnitudes[i], 6);
+                Serial.println(magnitude[peaks[i]], 6);
             }
+
+            // Find Valleys
+            findPeaks(invertedMagnitude, SAMPLES / 2, valleys, valley_count, height, threshold, distance, prominence, rel_height, valley_widths);
+
+            // Store and print valley results
+            Serial.println("Printing Valleys");
+            for (int i = 0; i < valley_count; i++) {
+                valley_frequencies[i] = frequencies[valleys[i]];
+                valley_magnitudes[i] = magnitude[valleys[i]]; // Use original magnitude
+                Serial.print(valley_frequencies[i], 2);
+                Serial.print(",");
+                Serial.println(valley_magnitudes[i], 6);
+            }
+
             Serial.println("End");
         }
     }
@@ -98,44 +124,34 @@ void loop() {
     }
 
     Serial.println("[INFO] Received Data, Sending to FFT Task...");
-
-    // Use overwrite to always replace old data (circular buffer behavior)
-    xQueueOverwrite(dataQueue, &dataBuffer);
+    xQueueOverwrite(dataQueue, dataBuffer);
 }
 
-void findPeaks(float x[], int size, int peaks[], int &peak_count, float height, float threshold, int distance, float prominence, float width, float rel_height, float widths[]) {
-    peak_count = 0;  
-    int last_peak_index = -distance;  
+void findPeaks(float x[], int size, int peaks[], int &peak_count, float height, float threshold, int distance, float prominence, float rel_height, float widths[]) {
+    peak_count = 0;
+    int last_peak_index = -distance;
 
-    for (int i = 2; i < size - 2; i++) {  // Check wider range to avoid false peaks
+    for (int i = 2; i < size - 2; i++) {
         float current = x[i];
         float prev1 = x[i - 1], prev2 = x[i - 2];
         float next1 = x[i + 1], next2 = x[i + 2];
 
-        // **More Strict Peak Condition**  
-        if (current > prev1 && current > next1 && 
-            current > prev2 && current > next2 &&  // Stronger peak condition
+        if (current > prev1 && current > next1 && current > prev2 && current > next2 && 
             current >= height && current >= threshold &&
             (current - prev1) > prominence && (current - next1) > prominence) {
 
-            // **Ensure minimum peak distance**
             if (i - last_peak_index >= distance) {
                 last_peak_index = i;
-
                 peaks[peak_count] = i;
-                peak_frequencies[peak_count] = frequencies[i];
-                peak_magnitudes[peak_count] = current;
 
-                // **Compute width at relative height**
                 float peakHeight = current * rel_height;
                 int left = i, right = i;
                 while (left > 0 && x[left] > peakHeight) left--;
                 while (right < size - 1 && x[right] > peakHeight) right++;
-
                 widths[peak_count] = right - left;
-                peak_count++;
 
-                if (peak_count >= (size / 10)) break;  // Exit early if needed
+                peak_count++;
+                if (peak_count >= (size / 10)) break;
             }
         }
     }
