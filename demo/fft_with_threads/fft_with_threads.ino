@@ -1,5 +1,6 @@
 #include <arduinoFFT.h>  // Ensure the library is installed
 #include "Arduino.h"
+#include <stdlib.h>
 
 #define SAMPLES 1024          // Must be a power of 2
 #define SAMPLING_FREQUENCY 125 // Hz
@@ -75,6 +76,10 @@ void FFTTask(void *parameter) {
                 Serial.print(",");
                 Serial.println(magnitude[peaks[i]], 6);
             }
+
+            float median = peak_median(peaks, peak_count);
+            Serial.println("Peak Median");
+            Serial.println(String(median));
 
             // Find Valleys
             findPeaks(invertedMagnitude, SAMPLES / 2, valleys, valley_count, height, threshold, distance, prominence, rel_height, valley_widths);
@@ -155,4 +160,28 @@ void findPeaks(float x[], int size, int peaks[], int &peak_count, float height, 
             }
         }
     }
+}
+
+// Comparison function for descending order
+int sort_dec(const void *a, const void *b) {
+    return (*(int*)b - *(int*)a);
+}
+
+float peak_median(int peaks[], int &peak_count) {
+  float temp_peaks[peak_count];
+  for (int i=0; i < peak_count; i++) { //making a temporary array of the peaks
+    temp_peaks[i] = magnitude[peaks[i]];
+  }
+
+  qsort(temp_peaks, peak_count, sizeof(temp_peaks[0]), sort_dec);
+
+  float median = 0;
+  if (peak_count % 2 == 0) { // for even number of peaks
+    median = (temp_peaks[peak_count/2] + temp_peaks[peak_count/2 + 1] ) / 2;
+  }
+  else { //for odd number of peaks
+    median = temp_peaks[int(ceil(peak_count/2))];
+  }
+
+  return median;  
 }
