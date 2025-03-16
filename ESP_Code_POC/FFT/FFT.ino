@@ -136,7 +136,7 @@ void loop() {
         }
         String input = Serial.readStringUntil('\n');
         if (input.startsWith("E")) {
-            dataBuffer[i] = Serial.parseFloat();
+            dataBuffer[i] = input.substring(1).toFloat();
         } else if (input.startsWith("P")) {
             ppgData[i] = input.substring(1).toFloat(); // Parse PPG data
         } else {
