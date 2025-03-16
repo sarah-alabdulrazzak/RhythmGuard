@@ -9,7 +9,7 @@ from scipy.interpolate import interp1d
 from scipy.signal import find_peaks
 
 # Serial Communication Configuration
-esp32_port = "COM4"  # Change this to your ESP32's port
+esp32_port = "COM5"  # Change this to your ESP32's port
 baud_rate = 115200
 SAMPLES = 1024  # Must match ESP32's SAMPLES
 fs = 125  # Sampling frequency in Hz
@@ -24,7 +24,7 @@ except Exception as e:
     exit()
 
 # Read Healthy PPG and ECG Data
-directory = r"C:\Users\kavya\OneDrive\Documents\GitHub\RhythmGuard\demo\fft_with_threads"
+directory = r"C:/Users/marye/OneDrive/Desktop/RhythmGuard/ESP_Code_POC"
 healthy_paths = []
 for dirname, _, filenames in os.walk(directory):
     for filename in filenames:

@@ -1,31 +1,18 @@
 #include <Arduino.h>
 #include <cmath>
 
-#define BUFFER_SIZE 32 //2048      // Increased buffer size
-#define CHUNK_SIZE 16 //512        // Large FFT chunk size
-#define LOG2_CHUNK_SIZE 4 //9     // log2(512) = 9
-#define SAMPLING_FREQUENCY 100
+#define BUFFER_SIZE 2048 //32       // Size of circular buffer (must be > CHUNK_SIZE to avoid overflow)
+#define CHUNK_SIZE 1024 //16        // Size of each FFT chunk
+#define LOG2_CHUNK_SIZE 10 //4     // log2(CHUNK_SIZE)
+#define SAMPLING_FREQUENCY 125 // Sampling frequency in Hz
 
-#ifndef PI
-#define PI 3.14159265358979323846
-#endif
+volatile double buffer[BUFFER_SIZE]; // Circular buffer to hold data
+volatile int writeIndex = 0;         // Index where new data is written
+volatile int availableSamples = 0;  // Number of samples available in buffer
 
-//fft variables
-int a = 0;
-int b = 0;
-int c = 35;
-int s = 1;
-int d = 0;
-int state = 0;
-
-hw_timer_t *timer = NULL;
-volatile bool timerFlag = false;
-
-volatile float buffer[BUFFER_SIZE];
-volatile int writeIndex = 0;
-volatile int availableSamples = 0;
-float* vReal;  // Dynamically allocate memory
-volatile bool fftInProgress = false;
+double vReal[CHUNK_SIZE];    // Real part of FFT input
+double vImag[CHUNK_SIZE];    // Imaginary part of FFT input
+volatile bool fftInProgress = false; // Flag to indicate FFT is in progress
 
 unsigned int bitReverse(unsigned int x, int log2n) {
   unsigned int n = 0;
@@ -37,139 +24,95 @@ unsigned int bitReverse(unsigned int x, int log2n) {
   return n;
 }
 
-void fft(float* vReal, int log2n) {
+void fft(double* vReal, double* vImag, int log2n) {
   int n = 1 << log2n;
-  int half_n = n / 2;
-  
-  if (state == 1) {
-    while (a < n) {
-      b = bitReverse(a, log2n);
-      if (a < b) {
-        float tempReal = vReal[a];
-        vReal[a] = vReal[b];
-        vReal[b] = tempReal;
-      }
-      if (timerFlag == true) {
-        timerFlag == false;
-        state = 1;
-        return;
-      }
-      a++;
+
+  for (unsigned int i = 0; i < n; i++) {
+    unsigned int j = bitReverse(i, log2n);
+    if (i < j) {
+      double temp = vReal[i];
+      vReal[i] = vReal[j];
+      vReal[j] = temp;
+
+      temp = vImag[i];
+      vImag[i] = vImag[j];
+      vImag[j] = temp;
     }
-    state == 2;
-    a = 0;
-    b = 0;
   }
 
-  if (state == 2) {
-    while (s <= log2n - 1) {
-      int m = 1 << s;
-      int m2 = m >> 1;
-      float wReal = 1.0;
-      float theta = -PI / m2;
-      float wmReal = cos(theta);
-  
-      while (d < m2) {
-        if (c > d) {
-          c = d;
-        }
-        while (c < half_n) {
-          c += m;
-          int kPlusM2 = c + m2;
-          float tReal = wReal * vReal[kPlusM2];
-  
-          vReal[kPlusM2] = vReal[c] - tReal;
-          vReal[c] += tReal;
-  
-          if (timerFlag == true) {
-            timerFlag == false;
-            state = 2;
-            return;          
-          }
-        }
-  
-        float tempReal = wReal * wmReal;
-        wReal = tempReal;
-        d += 1;
+  for (int s = 1; s <= log2n; s++) {
+    int m = 1 << s;
+    int m2 = m >> 1;
+    double wReal = 1.0;
+    double wImag = 0.0;
+    double wmReal = cos(-PI / m2);
+    double wmImag = sin(-PI / m2);
+
+    for (int j = 0; j < m2; j++) {
+      for (int k = j; k < n; k += m) {
+        int kPlusM2 = k + m2;
+        double tReal = wReal * vReal[kPlusM2] - wImag * vImag[kPlusM2];
+        double tImag = wReal * vImag[kPlusM2] + wImag * vReal[kPlusM2];
+        vReal[kPlusM2] = vReal[k] - tReal;
+        vImag[kPlusM2] = vImag[k] - tImag;
+        vReal[k] += tReal;
+        vImag[k] += tImag;
       }
-      s += 1;
+      double tempReal = wReal * wmReal - wImag * wmImag;
+      wImag = wReal * wmImag + wImag * wmReal;
+      wReal = tempReal;
     }
-    state == 0;
-    s = 1;
-    d = 0;
-    c = 0;
   }
 }
-
-void IRAM_ATTR onTimer() {
-  // This is the timer interrupt service routine
-  timerFlag = true; 
-}
-
 
 void setup() {
-  Serial.begin(921600);
-  
-  vReal = (float*)malloc(CHUNK_SIZE * sizeof(float));
-  if (!vReal) {
-    Serial.println("Memory allocation failed!");
-    while (1);
-  }
-
-  //Timer 0
-  timer = timerBegin(0, 80, true);  // prescaler 80
-  timerAttachInterrupt(timer, &onTimer, true);  // Attach interrupt
-  //triggers interrupt every 4 ms
-  timerAlarmWrite(timer, 4000, true);  // Set timer interval (in microseconds)
-  timerAlarmEnable(timer);  // Enable the timer
-
-  pinMode(5, OUTPUT);
+  Serial.begin(115200);
+  Serial.println("Send data points to start FFT processing.");
 }
 
 void loop() {
-  if (timerFlag == true) {
-    digitalWrite(5, HIGH);
-    delay(100); 
-    digitalWrite(5, LOW);
-    timerFlag = false;
-
-    if (Serial.available() > 0) {
-      String rawData = Serial.readStringUntil('\n');
-      buffer[writeIndex] = rawData.toDouble();
-      writeIndex = (writeIndex + 1) % BUFFER_SIZE;
-      availableSamples++;
-      if (availableSamples > BUFFER_SIZE) {
-        availableSamples = BUFFER_SIZE;
-      }
+  // Handle incoming data
+  if (Serial.available() > 0) {
+    String rawData = Serial.readStringUntil('\n');
+    //Serial.println(rawData); //successfully receives data
+    buffer[writeIndex] = rawData.toDouble(); // Write new data to the buffer
+    writeIndex = (writeIndex + 1) % BUFFER_SIZE; // Update write index (circular)
+    availableSamples++;
+    if (availableSamples > BUFFER_SIZE) {
+      availableSamples = BUFFER_SIZE; // Prevent overflow
     }
-    timerFlag == false;
+    //Serial.println(buffer[writeIndex]); //buffer has data
   }
 
+  // Process FFT when enough samples are available
   if (!fftInProgress && availableSamples >= CHUNK_SIZE) {
     fftInProgress = true;
-
-    int readIndex = (writeIndex - CHUNK_SIZE + BUFFER_SIZE) % BUFFER_SIZE;
+    //Serial.println("Hi"); //works with chunk size 8
+    // Load CHUNK_SIZE samples into FFT input arrays
+    int readIndex = (writeIndex - availableSamples + BUFFER_SIZE) % BUFFER_SIZE;
     for (int i = 0; i < CHUNK_SIZE; i++) {
       vReal[i] = buffer[readIndex];
+      vImag[i] = 0.0; // Imaginary part is 0
       readIndex = (readIndex + 1) % BUFFER_SIZE;
+      //Serial.println(readIndex); //readIndex is printing " "
     }
 
     availableSamples -= CHUNK_SIZE;
 
-    state == 1;
-    fft(vReal, LOG2_CHUNK_SIZE);
+    // Perform FFT
+    fft(vReal, vImag, LOG2_CHUNK_SIZE);
 
+    // Print FFT results (frequency and magnitude)
     Serial.println("FFT Results:");
     for (int i = 0; i < CHUNK_SIZE / 2; i++) {
-      float magnitude = sqrt(vReal[i] * vReal[i]);
-      float frequency = (float)i * SAMPLING_FREQUENCY / CHUNK_SIZE;
+      double magnitude = sqrt(vReal[i] * vReal[i] + vImag[i] * vImag[i]);
+      double frequency = (double)i * SAMPLING_FREQUENCY / CHUNK_SIZE;
       Serial.print(frequency);
       Serial.print(",");
-      Serial.println(magnitude);
-      
-      if (i % 16 == 0) delay(5);  // Prevent serial buffer overflow
+      Serial.print(magnitude);
+      Serial.println();
     }
 
-    fftInProgress = false;
+    fftInProgress = false; // Allow new FFT to start
   }
 }

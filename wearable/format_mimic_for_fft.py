@@ -8,7 +8,6 @@ import csv
 import time
 from collections import defaultdict
 
-
 arduino = serial.Serial(port='COM4', baudrate=115200, timeout=1) 
 time.sleep(2) 
 
@@ -28,7 +27,7 @@ with open(input_csv, mode='r') as file:
     for (i,v) in enumerate(row):
         columns[i].append(v)
     n += 1
-    
+
 #print(columns[2])
 #print(columns[2][0])
 with open("dummy.txt", "w") as file:
@@ -45,3 +44,5 @@ with open("dummy.txt", "w") as file:
             file.flush()
   except KeyboardInterrupt:
       print("\nExiting program.")
+
+
