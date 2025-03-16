@@ -110,7 +110,17 @@ for i in range(0, len(ppg_signal), SAMPLES):
     fft_chunk = []
     peaks_x = []
     peaks_y = []
+    valleys_x = []
+    valleys_y = []
     print("Receiving FFT results from ESP32...")
+
+    #receive time domain peak median
+    while True:
+        line = ser.readline().decode().strip()
+        if line == "Time Domain Peak Median":          
+            break
+    line = ser.readline().decode().strip()
+    time_peaks_median = float(line)
 
     # Receive FFT Results (frequency, magnitude)
     while True:
@@ -127,32 +137,42 @@ for i in range(0, len(ppg_signal), SAMPLES):
     # Receive Peaks Data
     while True:
         line = ser.readline().decode().strip()
-        if line == "Peak Median":
+        if line == "Printing Valleys":
             break  # End of peak data
         if line:
             try:
                 frequency, magnitude = map(float, line.split(","))
                 peaks_x.append(frequency)
                 peaks_y.append(magnitude)
-                print(magnitude)
             except ValueError:
                 print(f"Warning: Could not parse peak result line: {line}. Skipping this line.")
-    
-    #median
-    line = ser.readline().decode().strip()
-    median_peak = float(line)
+
+    # Receive Valleys Data
+    while True:
+        line = ser.readline().decode().strip()
+        if line == "End":
+            break  # End of peak data
+        if line:
+            try:
+                frequency, magnitude = map(float, line.split(","))
+                valleys_x.append(frequency)
+                valleys_y.append(magnitude)
+            except ValueError:
+                print(f"Warning: Could not parse valley result line: {line}. Skipping this line.")
+
 
     # Extract FFT frequencies and magnitudes
     x = [freq for freq, _ in fft_chunk]
     y = [mag for _, mag in fft_chunk]
 
     # Detect valleys (local minima)
+    """
     peaks, _ = find_peaks(y, prominence=0.1, distance=5)  # Detect peaks
     valleys, _ = find_peaks(-np.array(y), prominence=0.1, distance=5)  # Detect valleys
 
     valleys_x = [x[v] for v in valleys]
     valleys_y = [y[v] for v in valleys]
-
+"""
     # Plot the FFT data
     plt.cla()
     plt.plot(x, y, color='b', label="FFT")  # FFT data in blue
