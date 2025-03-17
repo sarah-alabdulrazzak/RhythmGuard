@@ -69,11 +69,15 @@ void FFTTask(void *parameter) {
             Serial.println("Time Domain Peak Median");
             Serial.println(String(median));
 
-            Serial.println("Printing Distance Between Peaks");
-            float peak_d[time_peak_count - 1];
-            peak_distance(time_peaks, time_peak_count, peak_d);
-            for (int i = 0; i < time_peak_count - 1; i++) {
-              Serial.println(peak_d[i], 6);
+
+            //if there's more than 1 peak, find the time between peaks
+            if (time_peak_count > 1) {
+              Serial.println("Printing Distance Between Peaks");
+              float peak_d[time_peak_count - 1];
+              peak_distance(time_peaks, time_peak_count, peak_d);
+              for (int i = 0; i < time_peak_count - 1; i++) {
+                Serial.println(peak_d[i], 6);
+              }
             }
 
 
