@@ -112,7 +112,7 @@ for i in range(0, len(ppg_signal), SAMPLES):
     peaks_y = []
     valleys_x = []
     valleys_y = []
-    print("Receiving FFT results from ESP32...")
+    print("Receiving FFT results from ESP32...")      
 
     #receive time domain peak median
     while True:
@@ -121,6 +121,17 @@ for i in range(0, len(ppg_signal), SAMPLES):
             break
     line = ser.readline().decode().strip()
     time_peaks_median = float(line)
+
+    # Receive distance between peaks in time domain
+    while True:
+        line = ser.readline().decode().strip()
+        if line == "FFT Results":
+            break  # End of distance between peaks data
+        if line:
+            try:
+                print(line)
+            except ValueError:
+                print(f"Warning: Could not parse FFT result line: {line}. Skipping this line.")    
 
     # Receive FFT Results (frequency, magnitude)
     while True:

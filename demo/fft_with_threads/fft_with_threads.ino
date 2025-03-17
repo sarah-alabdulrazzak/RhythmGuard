@@ -11,7 +11,6 @@ float vReal[SAMPLES];  // Real part
 float vImag[SAMPLES];  // Imaginary part
 float frequencies[SAMPLES / 2];
 float magnitude[SAMPLES / 2];
-float invertedMagnitude[SAMPLES / 2]; // Needed for valley detection
 float peak_frequencies[SAMPLES / 2];
 float peak_magnitudes[SAMPLES / 2];
 int peak_count = 0;
@@ -56,16 +55,27 @@ void FFTTask(void *parameter) {
                 vImag[i] = 0;
             }
 
-            float mean = mean*(vReal, SAMPLES);
-            float stdDev = standardDeviation(vReal, SAMPLES, mean);
+            float meanVal = mean(vReal, SAMPLES);
+            float stdDev = standardDeviation(vReal, SAMPLES, meanVal);
             for (int i = 0; i < SAMPLES; i++) {
-              vReal[i] = (vReal[i] - mean) / stdDev; //standardization
+              vReal[i] = (vReal[i] - meanVal) / stdDev; //standardization
             }            
 
-            findPeaks(vReal, SAMPLES / 2, time_peaks, time_peak_count, 1, 0.005, 0.3*SAMPLING_FREQUENCY, 0.2, 0, 0, time_peaks_widths);
-            float median = peak_median(peaks, peak_count);
+            findPeaks(vReal, SAMPLES, time_peaks, time_peak_count, 1, 0.005, 0.3*SAMPLING_FREQUENCY, 0.2, 0, 0, time_peaks_widths);
+            Serial.println("Printing Peaks");
+            Serial.println(time_peak_count);
+
+            float median = peak_median(time_peaks, time_peak_count);
             Serial.println("Time Domain Peak Median");
             Serial.println(String(median));
+
+            Serial.println("Printing Distance Between Peaks");
+            float peak_d[time_peak_count - 1];
+            peak_distance(time_peaks, time_peak_count, peak_d);
+            for (int i = 0; i < time_peak_count - 1; i++) {
+              Serial.println(peak_d[i], 6);
+            }
+
 
             // Perform FFT
             FFT.windowing(vReal, SAMPLES, FFT_WIN_TYP_HAMMING, FFT_FORWARD);
@@ -78,14 +88,10 @@ void FFTTask(void *parameter) {
             for (int i = 0; i < SAMPLES / 2; i++) {  
                 frequencies[i] = i * frequency_step;
                 magnitude[i] = vReal[i];
-            }
-
-            for (int i = 0; i < SAMPLES / 2; i++) {  
-                magnitude[i] = (magnitude[i] - mean) / stdDev;
-                invertedMagnitude[i] = -1*magnitude[i]; // Invert for valley detection
-            }      
+            }    
 
             // Print FFT Results
+            Serial.println("FFT Results");
             for (int i = 0; i < SAMPLES / 2; i++) {  
                 Serial.print(frequencies[i], 2);
                 Serial.print(",");
@@ -264,4 +270,11 @@ float standardDeviation(float array[], int array_len, float mean) {
   }
   float stDev = sqrt(sum / (array_len - 1));
   return stDev;
+}
+
+void peak_distance(int peak[], int peak_count, float peak_d[]) {
+  if (peak_count < 2) return;  // Ensure valid input
+  for (int i = 0; i < peak_count - 1; i++) {
+      peak_d[i] = (peak[i + 1] - peak[i]) * 8; //difference in time between peaks in ms
+  }
 }
