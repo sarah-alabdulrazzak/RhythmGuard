@@ -25,6 +25,12 @@ int time_peak_count = 0;
 int valley_count = 0;
 int valleys[SAMPLES / 2];
 float valley_widths[SAMPLES / 2];
+float valley_frequencies[SAMPLES / 2];
+float valley_magnitudes[SAMPLES / 2];
+float valley_height = -0.001;  // Set to negative value for valleys in inverted signal
+float valley_threshold = -0.001;  // Relaxed threshold
+float valley_prominence = 0.0001;  // Lower prominence for sensitivity
+float valley_rel_height = 0.5;  // 50% of the depth of the valley for width calculation
 
 int peaks[SAMPLES/2];
 float widths[SAMPLES/2];
@@ -50,6 +56,12 @@ void FFTTask(void *parameter) {
                 vImag[i] = 0;
             }
 
+            float mean = mean*(vReal, SAMPLES);
+            float stdDev = standardDeviation(vReal, SAMPLES, mean);
+            for (int i = 0; i < SAMPLES; i++) {
+              vReal[i] = (vReal[i] - mean) / stdDev; //standardization
+            }            
+
             findPeaks(vReal, SAMPLES / 2, time_peaks, time_peak_count, 1, 0.005, 0.3*SAMPLING_FREQUENCY, 0.2, 0, 0, time_peaks_widths);
             float median = peak_median(peaks, peak_count);
             Serial.println("Time Domain Peak Median");
@@ -66,12 +78,6 @@ void FFTTask(void *parameter) {
             for (int i = 0; i < SAMPLES / 2; i++) {  
                 frequencies[i] = i * frequency_step;
                 magnitude[i] = vReal[i];
-            }
-
-            float mean = mean*(magnitude, SAMPLES / 2);
-            float stdDev = standardDeviation(magnitude, SAMPLES / 2, mean);
-            for (int i = 0; i < SAMPLES/2; i++) {
-              magnitude[i] = (magnitude[i] - mean) / stdDev; //standardization
             }
 
             for (int i = 0; i < SAMPLES / 2; i++) {  
@@ -97,11 +103,11 @@ void FFTTask(void *parameter) {
             }
 
             // Find Valleys
-            findPeaks(invertedMagnitude, SAMPLES / 2, valleys, valley_count, 0, 0, 0, 0.001, 0.5, 1.5, valley_widths);
+            findValleys(magnitude, SAMPLES / 2, valleys, valley_count, valley_height, valley_threshold, distance, valley_prominence, valley_rel_height, 0, valley_widths);
 
             // Store and print valley results
             Serial.println("Printing Valleys");
-            Serial.println(valley_count);
+            //Serial.println(valley_count);
             for (int i = 0; i < valley_count; i++) {
                 Serial.print(frequencies[valleys[i]], 2);
                 Serial.print(",");
@@ -176,6 +182,43 @@ void findPeaks(float x[], int size, int peaks[], int &peak_count, float height, 
                     peak_count++;
                     if (peak_count >= (size / 10)) break;
                 }
+            }
+        }
+    }
+}
+
+void findValleys(float x[], int size, int valleys[], int &valley_count, float height, float threshold, int distance, float prominence, float rel_height, float min_width, float widths[]) {
+    valley_count = 0;
+    int last_valley_index = -distance;
+
+    // Invert the signal for valley detection
+    float invertedMagnitude[size];
+    for (int i = 0; i < size; i++) {
+        invertedMagnitude[i] = -x[i];  // Invert the signal to treat valleys as peaks
+    }
+
+    for (int i = 2; i < size - 2; i++) {
+        float current = invertedMagnitude[i];
+        float prev1 = invertedMagnitude[i - 1], prev2 = invertedMagnitude[i - 2];
+        float next1 = invertedMagnitude[i + 1], next2 = invertedMagnitude[i + 2];
+
+        // Look for peaks in the inverted signal (which are valleys in the original)
+        if (current > prev1 && current > next1 && current > prev2 && current > next2 && 
+            current <= height && current <= threshold &&  // Relaxed height and threshold
+            (current - prev1) > prominence && (current - next1) > prominence) {
+
+            // Calculate width at half the valley depth
+            float valleyHeight = current * rel_height;
+            int left = i, right = i;
+            while (left > 0 && invertedMagnitude[left] > valleyHeight) left--;
+            while (right < size - 1 && invertedMagnitude[right] > valleyHeight) right++;
+            float width = right - left;
+
+            if (width >= min_width) {
+                valleys[valley_count] = i;
+                widths[valley_count] = width;
+                valley_count++;
+                if (valley_count >= (size / 10)) break;
             }
         }
     }

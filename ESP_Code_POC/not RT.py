@@ -9,7 +9,7 @@ from scipy.interpolate import interp1d
 from scipy.signal import find_peaks
 
 # Serial Communication Configuration
-esp32_port = "COM5"  # Change this to your ESP32's port
+esp32_port = "COM4"  # Change this to your ESP32's port
 baud_rate = 115200
 SAMPLES = 1024  # Must match ESP32's SAMPLES
 fs = 125  # Sampling frequency in Hz
@@ -24,7 +24,7 @@ except Exception as e:
     exit()
 
 # Read Healthy PPG and ECG Data
-directory = r"C:/Users/marye/OneDrive/Desktop/RhythmGuard/ESP_Code_POC"
+directory = r"C:\Users\kavya\OneDrive\Documents\GitHub\RhythmGuard\ESP_Code_POC\healthy_data"
 healthy_paths = []
 for dirname, _, filenames in os.walk(directory):
     for filename in filenames:
@@ -165,14 +165,6 @@ for i in range(0, len(ppg_signal), SAMPLES):
     x = [freq for freq, _ in fft_chunk]
     y = [mag for _, mag in fft_chunk]
 
-    # Detect valleys (local minima)
-    """
-    peaks, _ = find_peaks(y, prominence=0.1, distance=5)  # Detect peaks
-    valleys, _ = find_peaks(-np.array(y), prominence=0.1, distance=5)  # Detect valleys
-
-    valleys_x = [x[v] for v in valleys]
-    valleys_y = [y[v] for v in valleys]
-"""
     # Plot the FFT data
     plt.cla()
     plt.plot(x, y, color='b', label="FFT")  # FFT data in blue
