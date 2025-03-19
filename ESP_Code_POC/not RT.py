@@ -85,11 +85,11 @@ for i in range(0, len(ecg_data), SAMPLES):
     #receive time domain peak median
     while True:
         line = ser.readline().decode().strip()
-        if line == "Time Domain Peak Median":          
+        if line == "Time Domain Peak Median of ECG":          
             break
     line = ser.readline().decode().strip()
     time_peaks_median = float(line)
-
+    """
     # Receive distance between peaks in time domain
     while True:
         line = ser.readline().decode().strip()
@@ -100,6 +100,7 @@ for i in range(0, len(ecg_data), SAMPLES):
                 print(line)
             except ValueError:
                 print(f"Warning: Could not parse FFT result line: {line}. Skipping this line.")    
+    """
 
     # Receive FFT Results (frequency, magnitude)
     while True:
@@ -129,7 +130,7 @@ for i in range(0, len(ecg_data), SAMPLES):
     # Receive Valleys Data
     while True:
         line = ser.readline().decode().strip()
-        if line == "End":
+        if line == "Printing Frequency Distance Between Peaks":
             break  # End of peak data
         if line:
             try:
@@ -139,6 +140,16 @@ for i in range(0, len(ecg_data), SAMPLES):
             except ValueError:
                 print(f"Warning: Could not parse valley result line: {line}. Skipping this line.")
 
+    # Receive Frequency Distance Between Peaks
+    while True:
+        line = ser.readline().decode().strip()
+        if line == "End":
+            break  # End of Frequency Distance Between Peaks
+        if line:
+            try:
+                print(line)
+            except ValueError:
+                print(f"Warning: Could not parse peak frequency distance result line: {line}. Skipping this line.")
 
     # Extract FFT frequencies and magnitudes
     x = [freq for freq, _ in fft_chunk]

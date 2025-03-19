@@ -1,6 +1,7 @@
 #include <arduinoFFT.h>  // Ensure the library is installed
 #include "Arduino.h"
 #include <stdlib.h>
+#include <cstring>
 
 #define SAMPLES 1024          // Must be a power of 2
 #define SAMPLING_FREQUENCY 125 // Hz
@@ -20,9 +21,13 @@ int peak_count = 0;
 
 
 //for time domain peaks
-float time_peaks_widths[SAMPLES/2];
-int time_peaks[SAMPLES / 2];
-int time_peak_count = 0;
+float ecg_time_peaks_widths[SAMPLES/2];
+int ecg_time_peaks[SAMPLES / 2];
+int ecg_time_peak_count = 0;
+
+float ppg_time_valleys_widths[SAMPLES/2];
+int ppg_time_valleys[SAMPLES / 2];
+int ppg_time_valley_count = 0;
 
 int valley_count = 0;
 int valleys[SAMPLES / 2];
@@ -57,32 +62,6 @@ void FFTTask(void *parameter) {
                 vReal[i] = fftBuffer[i];
                 vImag[i] = 0;
             }
-
-            float meanVal = mean(vReal, SAMPLES);
-            float stdDev = standardDeviation(vReal, SAMPLES, meanVal);
-            for (int i = 0; i < SAMPLES; i++) {
-              vReal[i] = (vReal[i] - meanVal) / stdDev; //standardization
-            }            
-
-            findPeaks(vReal, SAMPLES, time_peaks, time_peak_count, 1, 0.005, 0.3*SAMPLING_FREQUENCY, 0.2, 0, 0, time_peaks_widths);
-            Serial.println("Printing Peaks");
-            Serial.println(time_peak_count);
-
-            float median = peak_median(time_peaks, time_peak_count);
-            Serial.println("Time Domain Peak Median");
-            Serial.println(String(median));
-
-
-            //if there's more than 1 peak, find the time between peaks
-            if (time_peak_count > 1) {
-              Serial.println("Printing Distance Between Peaks");
-              float peak_d[time_peak_count - 1];
-              peak_distance(time_peaks, time_peak_count, peak_d);
-              for (int i = 0; i < time_peak_count - 1; i++) {
-                Serial.println(peak_d[i], 6);
-              }
-            }
-
 
             // Perform FFT
             FFT.windowing(vReal, SAMPLES, FFT_WIN_TYP_HAMMING, FFT_FORWARD);
@@ -126,6 +105,32 @@ void FFTTask(void *parameter) {
                 Serial.print(",");
                 Serial.println(magnitude[valleys[i]], 6);
             }
+
+            //if there's more than 1 peak, find the distance between peaks/valleys in frequency domain
+           float peak_d[peak_count - 1];
+           float valley_d[valley_count - 1];           
+           if (peak_count > 1) {
+              //Serial.println("Printing Frequency Distance Between Peaks");
+              peak_distance(peaks, peak_count, peak_d, "frequency");
+              /*
+              for (int i = 0; i < peak_count - 1; i++) {
+                Serial.println(peak_d[i], 6);
+              }
+              */
+            }
+/*            if (valley_count > 1) {
+              Serial.println("Printing Frequency Distance Between Valleys");
+              peak_distance(valleys, valley_count, valley_d, "frequency");
+              for (int i = 0; i < valley_count - 1; i++) {
+                Serial.println(valley_d[i], 6);
+              }
+            } 
+*/
+            //standard deviation of distances between peaks, valleys
+            float peak_distance_meanVal = mean(peak_d, peak_count - 1);
+            float peak_distance_stdDev = standardDeviation(peak_d, peak_count - 1, peak_distance_meanVal);
+            //float valley_distance_meanVal = mean(valley_d, valley_count - 1);
+            //float valley_distance_stdDev = standardDeviation(vallevalley_dys, valley_count - 1, valley_distance_meanVal);
 
             Serial.println("End");
         }
@@ -174,6 +179,40 @@ void loop() {
           i--;
         }
     }
+
+    //ecg standardization
+    float ecg_meanVal = mean(dataBuffer, SAMPLES);
+    float ecg_stdDev = standardDeviation(dataBuffer, SAMPLES, ecg_meanVal);
+    for (int i = 0; i < SAMPLES; i++) {
+      dataBuffer[i] = (dataBuffer[i] - ecg_meanVal) / ecg_stdDev;
+    }            
+
+    //peaks in time domain ecg
+    findPeaks(dataBuffer, SAMPLES, ecg_time_peaks, ecg_time_peak_count, 1, 0.005, 0.3*SAMPLING_FREQUENCY, 0.2, 0, 0, ecg_time_peaks_widths);
+    Serial.println("Printing Peaks");
+    Serial.println(ecg_time_peak_count);
+    float ecg_median = peak_median(ecg_time_peaks, ecg_time_peak_count);
+    Serial.println("Time Domain Peak Median of ECG");
+    Serial.println(String(ecg_median));
+
+    //ppg standardization
+    float ppg_meanVal = mean(ppgBuffer, SAMPLES);
+    float ppg_stdDev = standardDeviation(ppgBuffer, SAMPLES, ppg_meanVal);
+    for (int i = 0; i < SAMPLES; i++) {
+      ppgBuffer[i] = (ppgBuffer[i] - ppg_meanVal) / ppg_stdDev;
+    }  
+
+    findValleys(ppgBuffer, SAMPLES, ppg_time_valleys, ppg_time_valley_count, 1, 0.005, 0.3*SAMPLING_FREQUENCY, 0.2, 0, 0, ppg_time_valleys_widths);
+    //if there's more than 1 peak, find the time between peaks
+    float ppg_valley_d[ppg_time_valley_count - 1];
+    if (ppg_time_valley_count > 1) {
+      //Serial.println("Printing Distance Between Peaks");      
+      peak_distance(ppg_time_valleys, ppg_time_valley_count, ppg_valley_d, "time");
+      /* for (int i = 0; i < ppg_time_valley_count - 1; i++) {
+        Serial.println(ppg_valley_d[i], 6);
+        }*/
+    }
+    float diastolic_time = mean(ppg_valley_d, ppg_time_valley_count - 1);
 
     Serial.println("[INFO] Received Data, Sending to FFT Task...");
     xQueueOverwrite(dataQueue, dataBuffer);
@@ -293,10 +332,16 @@ float standardDeviation(float array[], int array_len, float mean) {
   return stDev;
 }
 
-void peak_distance(int peak[], int peak_count, float peak_d[]) {
+void peak_distance(int peak[], int peak_count, float peak_d[], const char* domain) {
   if (peak_count < 2) return;  // Ensure valid input
-  for (int i = 0; i < peak_count - 1; i++) {
-      peak_d[i] = (peak[i + 1] - peak[i]) * 0.008; //difference in time between peaks in ms
+  if (strcmp(domain,"time") == 0) {
+    for (int i = 0; i < peak_count - 1; i++) {
+        peak_d[i] = (peak[i + 1] - peak[i]) * 0.008; //difference in time between peaks in ms
+    }
+  }
+  if (strcmp(domain,"frequency") == 0) {
+    for (int i = 0; i < peak_count - 1; i++) {
+      peak_d[i] = frequencies[peak[i + 1]] - frequencies[peak[i]];
+    } 
   }
 }
-
