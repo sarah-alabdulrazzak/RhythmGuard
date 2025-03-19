@@ -7,6 +7,9 @@
 
 ArduinoFFT<float> FFT;  // Declare FFT object for float type
 
+float ecgBuffer[SAMPLES];  // ECG data buffer
+float ppgBuffer[SAMPLES];  // PPG data buffer
+
 float vReal[SAMPLES];  // Real part
 float vImag[SAMPLES];  // Imaginary part
 float frequencies[SAMPLES / 2];
@@ -155,7 +158,21 @@ void loop() {
                 return;
             }
         }
-        dataBuffer[i] = Serial.parseFloat();
+        String input = Serial.readStringUntil('\n');
+
+        // Assuming input has ECG first and PPG second separated by a space or comma
+        int separatorIndex = input.indexOf(','); // Assuming data is comma-separated
+        if (separatorIndex > 0) {
+            String ecgValue = input.substring(0, separatorIndex);
+            String ppgValue = input.substring(separatorIndex + 1);
+
+            dataBuffer[i] = ecgValue.toFloat();  // ECG data
+            ppgBuffer[i] = ppgValue.toFloat();  // PPG data
+
+        }
+        else{
+          i--;
+        }
     }
 
     Serial.println("[INFO] Received Data, Sending to FFT Task...");
@@ -282,3 +299,4 @@ void peak_distance(int peak[], int peak_count, float peak_d[]) {
       peak_d[i] = (peak[i + 1] - peak[i]) * 0.008; //difference in time between peaks in ms
   }
 }
+

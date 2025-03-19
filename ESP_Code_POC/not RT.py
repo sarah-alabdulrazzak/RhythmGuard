@@ -23,50 +23,25 @@ except Exception as e:
     print(f"Failed to open serial port {esp32_port}: {e}")
     exit()
 
-# Read Healthy PPG and ECG Data
-directory = r"C:\Users\kavya\OneDrive\Documents\GitHub\RhythmGuard\ESP_Code_POC\healthy_data"
-healthy_paths = []
-for dirname, _, filenames in os.walk(directory):
-    for filename in filenames:
-        if "csv" in filename:
-            healthy_paths.append(os.path.join(dirname, filename))
+# Step 2: Read ECG and PPG Data from CSV
+input_csv = r"C:\Users\kavya\OneDrive\Documents\GitHub\RhythmGuard\ESP_Code_POC\healthy_data\mimic_perform_non_af_009_data.csv"
+print(f"Reading ECG and PPG data from {input_csv}...")
+ecg_data = []
+ppg_data = []
 
-# Select a random healthy patient
-if not healthy_paths:
-    print("Error: No healthy patient data found.")
+try:
+    with open(input_csv, "r") as file:
+        reader = csv.reader(file)
+        next(reader)  # Skip the header row
+        for row in reader:
+            try:
+                ecg_data.append(float(row[2]))  # ECG is in the third column (index 2)
+                ppg_data.append(float(row[1]))  # PPG is in the second column (index 1)
+            except ValueError:
+                print(f"Warning: Could not convert data to float. Skipping this row.")
+except FileNotFoundError:
+    print(f"Error: The file {input_csv} was not found.")
     exit()
-
-selected_path = np.random.choice(healthy_paths)
-print(f"Selected healthy patient data: {selected_path}")
-
-# Load ECG and PPG Data
-df = pd.read_csv(selected_path)
-if 'PLETH' in df.columns:
-    ppg_signal = df['PLETH'].values
-elif 'PPG' in df.columns:
-    ppg_signal = df['PPG'].values
-else:
-    print("Error: No PPG signal found in selected file.")
-    exit()
-
-if 'ECG' in df.columns:
-    ecg_signal = df['ECG'].values
-else:
-    print("Error: No ECG signal found in selected file.")
-    exit()
-
-# Resample PPG and ECG Signals (if needed)
-def resample(signal, fs_original=125, fs_new=125):
-    """Resamples a signal using linear interpolation."""
-    if fs_original == fs_new:
-        return signal  # No resampling needed
-    original_time = np.arange(len(signal)) / fs_original
-    new_time = np.arange(0, original_time[-1], 1/fs_new)
-    interp_function = interp1d(original_time, signal, kind='linear', fill_value='extrapolate')
-    return interp_function(new_time)
-
-ppg_signal = resample(ppg_signal, fs_original=125, fs_new=fs)
-ecg_signal = resample(ecg_signal, fs_original=125, fs_new=fs)
 
 # Send ECG and PPG Data in Chunks
 fft_results = []
@@ -78,33 +53,26 @@ plt.ylabel("Magnitude")
 plt.title("FFT")
 
 # Sending ECG and PPG Data
-for i in range(0, len(ppg_signal), SAMPLES):
-    ppg_chunk = ppg_signal[i:i + SAMPLES]
-    ecg_chunk = ecg_signal[i:i + SAMPLES]
-    
-    if len(ppg_chunk) < SAMPLES or len(ecg_chunk) < SAMPLES:
+for i in range(0, len(ecg_data), SAMPLES):
+    chunk_ecg = ecg_data[i:i + SAMPLES]
+    chunk_ppg = ppg_data[i:i + SAMPLES]
+
+    if len(chunk_ecg) < SAMPLES or len(chunk_ppg) < SAMPLES:
         print(f"Warning: Remaining data chunk has less than {SAMPLES} samples, skipping.")
         break
-
+    
     print(f"Sending chunk {i//SAMPLES + 1} of ECG and PPG data to ESP32...")
 
-    # Send ECG Data
-    for value in ecg_chunk:
+    # Send ECG and PPG data to ESP32
+    for ecg_value, ppg_value in zip(chunk_ecg, chunk_ppg):
         try:
-            ser.write(f"E{value}\n".encode())  # Send ECG data with 'E' prefix
+            # Prepend 'E' to ECG value and 'P' to PPG value before sending
+            ser.write(f"{ecg_value},{ppg_value}\n".encode())  # Send ECG and PPG data on the same line separated by a comma
             time.sleep(0.008)  # Small delay to ensure data is sent
         except Exception as e:
-            print(f"Error while sending ECG data to ESP32: {e}")
+            print(f"Error while sending data to ESP32: {e}")
             break
 
-    # Send PPG Data
-    for value in ppg_chunk:
-        try:
-            ser.write(f"P{value}\n".encode())  # Send PPG data with 'P' prefix
-            time.sleep(0.008)  # Small delay to ensure data is sent
-        except Exception as e:
-            print(f"Error while sending PPG data to ESP32: {e}")
-            break
 
     # Receive FFT Results from ESP32
     fft_chunk = []
