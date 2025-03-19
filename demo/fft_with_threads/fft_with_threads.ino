@@ -279,6 +279,6 @@ float standardDeviation(float array[], int array_len, float mean) {
 void peak_distance(int peak[], int peak_count, float peak_d[]) {
   if (peak_count < 2) return;  // Ensure valid input
   for (int i = 0; i < peak_count - 1; i++) {
-      peak_d[i] = (peak[i + 1] - peak[i]) * 8; //difference in time between peaks in ms
+      peak_d[i] = (peak[i + 1] - peak[i]) * 0.008; //difference in time between peaks in ms
   }
 }
