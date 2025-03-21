@@ -202,7 +202,7 @@ void loop() {
       ppgBuffer[i] = (ppgBuffer[i] - ppg_meanVal) / ppg_stdDev;
     }  
 
-    findValleys(ppgBuffer, SAMPLES, ppg_time_valleys, ppg_time_valley_count, 1, 0.005, 0.3*SAMPLING_FREQUENCY, 0.2, 0, 0, ppg_time_valleys_widths);
+    findValleys(ppgBuffer, SAMPLES, ppg_time_valleys, ppg_time_valley_count, 0.5);
     //if there's more than 1 peak, find the time between peaks
     float ppg_valley_d[ppg_time_valley_count - 1];
     if (ppg_time_valley_count > 1) {
@@ -213,6 +213,7 @@ void loop() {
         }*/
     }
     float diastolic_time = mean(ppg_valley_d, ppg_time_valley_count - 1);
+    float diastolic_area = trapezoidal(ppgBuffer, SAMPLES, 0.0, SAMPLES/SAMPLING_FREQUENCY)
 
     Serial.println("[INFO] Received Data, Sending to FFT Task...");
     xQueueOverwrite(dataQueue, dataBuffer);
@@ -353,8 +354,8 @@ float standardDeviation(float array[], int array_len, float mean) {
   return stDev;
 }
 
-float trapezoidal(float array[], int array_len, float a, float b){
-  float h = (b-a)/array_len;
+float trapezoidal(float array[], int array_len){
+  float h = 1;
   float s= array[array_len-1]+array[0];
 
   for(int i=1; i<array_len; i++){
