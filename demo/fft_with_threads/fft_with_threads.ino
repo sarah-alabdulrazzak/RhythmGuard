@@ -332,6 +332,17 @@ float standardDeviation(float array[], int array_len, float mean) {
   return stDev;
 }
 
+float trapezoidal(float array[], int array_len, float a, float b){
+  float h = (b-a)/array_len;
+  float s= array[array_len-1]+array[0];
+
+  for(int i=1; i<array_len; i++){
+    s+= 2*array[i]
+  }
+
+  return (h/2)*s;
+}
+
 void peak_distance(int peak[], int peak_count, float peak_d[], const char* domain) {
   if (peak_count < 2) return;  // Ensure valid input
   if (strcmp(domain,"time") == 0) {
