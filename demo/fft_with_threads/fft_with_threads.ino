@@ -290,6 +290,27 @@ void findValleys(float x[], int size, int valleys[], int &valley_count, float he
     }
 }
 
+String class_itos(int class_idx){
+  if(idx==0){
+      return "Atrial_Fibrillation";
+  }
+  else if(idx==1){
+      return "Bradycardia";
+  }
+  else if(idx==2){
+      return "Healthy";
+  }
+  else if(idx==3){
+      return "Tachycardia";
+  }
+  else if(idx==4){
+      return "Ventricular_Flutter_Fib";
+  }
+  else{
+      return "Ventricular_Tachycardia";
+  }
+  return "";
+}
 
 // Comparison function for descending order
 int sort_dec(const void *a, const void *b) {
