@@ -9,7 +9,7 @@ from scipy.interpolate import interp1d
 from scipy.signal import find_peaks
 
 # Serial Communication Configuration
-esp32_port = "COM4"  # Change this to your ESP32's port
+esp32_port = "COM3"  # Change this to your ESP32's port
 baud_rate = 115200
 SAMPLES = 1024  # Must match ESP32's SAMPLES
 fs = 125  # Sampling frequency in Hz
@@ -24,7 +24,7 @@ except Exception as e:
     exit()
 
 # Step 2: Read ECG and PPG Data from CSV
-input_csv = r"C:\Users\kavya\OneDrive\Documents\GitHub\RhythmGuard\ESP_Code_POC\healthy_data\mimic_perform_non_af_009_data.csv"
+input_csv = r"arrhythmia_data\\Ventricular_Flutter_Fib\\f120s.csv"
 print(f"Reading ECG and PPG data from {input_csv}...")
 ecg_data = []
 ppg_data = []
@@ -35,7 +35,7 @@ try:
         next(reader)  # Skip the header row
         for row in reader:
             try:
-                ecg_data.append(float(row[2]))  # ECG is in the third column (index 2)
+                ecg_data.append(float(row[0]))  # ECG is in the first column (index 2)
                 ppg_data.append(float(row[1]))  # PPG is in the second column (index 1)
             except ValueError:
                 print(f"Warning: Could not convert data to float. Skipping this row.")
