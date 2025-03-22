@@ -24,6 +24,9 @@ int peak_count = 0;
 float ecg_time_peaks_widths[SAMPLES/2];
 int ecg_time_peaks[SAMPLES / 2];
 int ecg_time_peak_count = 0;
+float peak_distance_stdDev;
+float peak_distance_meanVal;
+
 
 float ppg_time_valleys_widths[SAMPLES/2];
 int ppg_time_valleys[SAMPLES / 2];
@@ -78,34 +81,34 @@ void FFTTask(void *parameter) {
             }    
 
             // Print FFT Results
-            Serial.println("FFT Results");
+            /*Serial.println("FFT Results");
             for (int i = 0; i < SAMPLES / 2; i++) {  
                 Serial.print(frequencies[i], 2);
                 Serial.print(",");
                 Serial.println(magnitude[i], 6);
-            }
+            }*/
 
             // Find Peaks
             findPeaks(magnitude, SAMPLES / 2, ecg_freq_peaks, peak_count, ecg_freq_height, ecg_freq_threshold, ecg_freq_distance, ecg_freq_prominence, ecg_freq_rel_height, 0.75, ecg_freq_widths);
 
-            Serial.println("Printing Peaks");
-            for (int i = 0; i < peak_count; i++) {
+            //Serial.println("Printing Peaks");
+            /*for (int i = 0; i < peak_count; i++) {
                 Serial.print(frequencies[ecg_freq_peaks[i]], 2);
                 Serial.print(",");
                 Serial.println(magnitude[ecg_freq_peaks[i]], 6);
-            }
+            }*/
 
             // Find Valleys
             findValleys(magnitude, SAMPLES / 2, ecg_freq_valleys, valley_count, ecg_freq_valley_height, ecg_freq_valley_threshold, ecg_freq_distance, ecg_freq_valley_prominence, ecg_freq_valley_rel_height, 0, ecg_freq_valley_widths);
 
             // Store and print valley results
-            Serial.println("Printing Valleys");
+            //Serial.println("Printing Valleys");
             //Serial.println(valley_count);
-            for (int i = 0; i < valley_count; i++) {
+            /*for (int i = 0; i < valley_count; i++) {
                 Serial.print(frequencies[ecg_freq_valleys[i]], 2);
                 Serial.print(",");
                 Serial.println(magnitude[ecg_freq_valleys[i]], 6);
-            }
+            }*/
 
             //if there's more than 1 peak, find the distance between peaks/valleys in frequency domain
            float peak_d[peak_count - 1];
@@ -128,8 +131,9 @@ void FFTTask(void *parameter) {
             } 
 */
             //standard deviation of distances between peaks, valleys
-            float peak_distance_meanVal = mean(peak_d, peak_count - 1);
-            float peak_distance_stdDev = standardDeviation(peak_d, peak_count - 1, peak_distance_meanVal);
+            peak_distance_meanVal = mean(peak_d, peak_count - 1);
+            peak_distance_stdDev = standardDeviation(peak_d, peak_count - 1, peak_distance_meanVal);
+            
             //float valley_distance_meanVal = mean(valley_d, valley_count - 1);
             //float valley_distance_stdDev = standardDeviation(vallevalley_dys, valley_count - 1, valley_distance_meanVal);
 
@@ -147,7 +151,7 @@ void setup() {
     dataQueue = xQueueCreate(1, sizeof(float) * SAMPLES);  
 
     // Create FFT Task
-    xTaskCreatePinnedToCore(FFTTask, "FFTTask", 8192, NULL, 1, &FFTTaskHandle, 1);
+    xTaskCreatePinnedToCore(FFTTask, "FFTTask", 16384, NULL, 1, &FFTTaskHandle, 1);
 
     Serial.println("[INFO] ESP32 Ready!");
 }
@@ -190,11 +194,12 @@ void loop() {
 
     //peaks in time domain ecg
     findPeaks(dataBuffer, SAMPLES, ecg_time_peaks, ecg_time_peak_count, 1, 0.005, 0.3*SAMPLING_FREQUENCY, 0.2, 0, 0, ecg_time_peaks_widths);
-    Serial.println("Printing Peaks");
-    Serial.println(ecg_time_peak_count);
+    //Serial.println("Printing Peaks");
+    //Serial.println(ecg_time_peak_count);
     float ecg_median = peak_median(ecg_time_peaks, ecg_time_peak_count);
-    Serial.println("Time Domain Peak Median of ECG");
-    Serial.println(String(ecg_median));
+    //Serial.println("Time Domain Peak Median of ECG");
+    Serial.println("Median: "+String(ecg_median));
+    Serial.println("Std: "+String(peak_distance_stdDev));
 
     //ppg standardization
     float ppg_meanVal = mean(ppgBuffer, SAMPLES);
@@ -216,7 +221,7 @@ void loop() {
     float diastolic_time = mean(ppg_valley_d, ppg_time_valley_count - 1);
     //float diastolic_area = trapezoidal(ppg_time_valleys, ppg_time_valley_count)
 
-    Serial.println("[INFO] Received Data, Sending to FFT Task...");
+    //Serial.println("[INFO] Received Data, Sending to FFT Task...");
     xQueueOverwrite(dataQueue, dataBuffer);
 }
 

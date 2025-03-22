@@ -13,7 +13,7 @@ esp32_port = "COM3"  # Change this to your ESP32's port
 baud_rate = 115200
 SAMPLES = 1024  # Must match ESP32's SAMPLES
 fs = 125  # Sampling frequency in Hz
-timeout = 2  # Timeout for serial communication in seconds
+timeout = 5  # Timeout for serial communication in seconds
 
 # Connect to ESP32
 try:
@@ -24,7 +24,7 @@ except Exception as e:
     exit()
 
 # Step 2: Read ECG and PPG Data from CSV
-input_csv = r"arrhythmia_data\\Ventricular_Flutter_Fib\\f120s.csv"
+input_csv = r"arrhythmia_data\\Tachycardia\\t108s.csv"
 print(f"Reading ECG and PPG data from {input_csv}...")
 ecg_data = []
 ppg_data = []
@@ -83,12 +83,23 @@ for i in range(0, len(ecg_data), SAMPLES):
     print("Receiving FFT results from ESP32...")      
 
     #receive time domain peak median
-    while True:
+    '''while True:
         line = ser.readline().decode().strip()
         if line == "Time Domain Peak Median of ECG":          
-            break
-    line = ser.readline().decode().strip()
-    time_peaks_median = float(line)
+            break'''
+    #ser.readline()
+    #line = ser.readline().decode().strip()
+    #print(line)
+    #rr_median = float(line)
+    
+
+    #line = ser.readline().decode().strip()
+    #print(line)
+    #rr_std = float(line)
+    
+    print(ser.readline().decode())
+    print(ser.readline().decode())
+
     """
     # Receive distance between peaks in time domain
     while True:
@@ -103,7 +114,7 @@ for i in range(0, len(ecg_data), SAMPLES):
     """
 
     # Receive FFT Results (frequency, magnitude)
-    while True:
+    '''while True:
         line = ser.readline().decode().strip()
         if line == "Printing Peaks":
             break  # End of FFT data, peaks start here
@@ -167,6 +178,6 @@ for i in range(0, len(ecg_data), SAMPLES):
     plt.legend()
     plt.pause(0.1)  # Pause to update the plot
 
-    fft_results.extend(fft_chunk)
+    fft_results.extend(fft_chunk)'''
 
 plt.close()
