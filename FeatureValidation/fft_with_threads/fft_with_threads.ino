@@ -17,40 +17,59 @@ float frequencies[SAMPLES / 2];
 float magnitude[SAMPLES / 2];
 float peak_frequencies[SAMPLES / 2];
 float peak_magnitudes[SAMPLES / 2];
-int peak_count = 0;
 
 
 //for time domain peaks
-float ecg_time_peaks_widths[SAMPLES/2];
-int ecg_time_peaks[SAMPLES / 2];
-int ecg_time_peak_count = 0;
+float ecg_time_valley_widths[SAMPLES/2];
+int ecg_time_valleys[SAMPLES / 2];
+int ecg_time_valley_count = 0;
 float peak_distance_stdDev;
 float peak_distance_meanVal;
+float ecg_time_valley_height = 0.0;  // Set to negative value for valleys in inverted signal
+float ecg_time_valley_threshold = 0.01;  // Relaxed threshold
+float ecg_time_valley_prominence = 0.4;  // Lower prominence for sensitivity
+float ecg_time_valley_rel_height = 0.0;  // 50% of the depth of the valley for width calculation
+float ecg_time_valley_width = 0.0;
+float ecg_time_valley_distance = 0.3*SAMPLING_FREQUENCY;
 
+float ecg_time_peak_widths[SAMPLES/2];
+int ecg_time_peaks[SAMPLES / 2];
+int ecg_time_peak_count = 0;
+float ecg_time_peak_height = 1.0;  // Set to negative value for valleys in inverted signal
+float ecg_time_peak_threshold = 0.005;  // Relaxed threshold
+float ecg_time_peak_prominence = 0.2;  // Lower prominence for sensitivity
+float ecg_time_peak_rel_height = 0.0;  // 50% of the depth of the valley for width calculation
+float ecg_time_peak_width = 0.0;
+float ecg_time_peak_distance = 0.3*SAMPLING_FREQUENCY;
 
-float ppg_time_valleys_widths[SAMPLES/2];
+float ppg_time_valley_widths[SAMPLES/2];
+float diastolic_time=0.0;
 int ppg_time_valleys[SAMPLES / 2];
 int ppg_time_valley_count = 0;
+float ppg_time_peak_height=0.5;
+float ppg_time_valley_height=-0.5;
 
 //for freq domain
-int valley_count = 0;
+int ecg_freq_valley_count = 0;
 int ecg_freq_valleys[SAMPLES / 2];
 float ecg_freq_valley_widths[SAMPLES / 2];
 float ecg_freq_valley_frequencies[SAMPLES / 2];
 float ecg_freq_valley_magnitudes[SAMPLES / 2];
-float ecg_freq_valley_height = -0.001;  // Set to negative value for valleys in inverted signal
-float ecg_freq_valley_threshold = -0.001;  // Relaxed threshold
-float ecg_freq_valley_prominence = 0.0001;  // Lower prominence for sensitivity
+float ecg_freq_valley_height = 0.0;  // Set to negative value for valleys in inverted signal
+float ecg_freq_valley_threshold = 0.0;  // Relaxed threshold
+float ecg_freq_valley_prominence = 0.001;  // Lower prominence for sensitivity
 float ecg_freq_valley_rel_height = 0.5;  // 50% of the depth of the valley for width calculation
+float ecg_freq_valley_width = 1.5;
 
+int ecg_freq_peak_count = 0;
 int ecg_freq_peaks[SAMPLES/2];
-float ecg_freq_widths[SAMPLES/2];
-float ecg_freq_height = 0;  // Minimum height to be considered a peak
-float ecg_freq_threshold = 0;  // Minimum threshold for detection
-int ecg_freq_distance = 2;  // Minimum distance between peaks
-float ecg_freq_prominence = 0.001; // Minimum difference from neighbors
-float ecg_freq_width = 0.75; // Placeholder for width calculation
-float ecg_freq_rel_height = 0.5; // Relative height for width calculation
+float ecg_freq_peak_widths[SAMPLES/2];
+float ecg_freq_peak_height = 0.0;  // Minimum height to be considered a peak
+float ecg_freq_peak_threshold = 0.0;  // Minimum threshold for detection
+int ecg_freq_peak_distance = 0.0;  // Minimum distance between peaks
+float ecg_freq_peak_prominence = 0.001; // Minimum difference from neighbors
+float ecg_freq_peak_width = 0.75; // Placeholder for width calculation
+float ecg_freq_peak_rel_height = 0.5; // Relative height for width calculation
 
 TaskHandle_t FFTTaskHandle;   // FFT Task
 QueueHandle_t dataQueue;      // Queue for data transfer
@@ -89,7 +108,7 @@ void FFTTask(void *parameter) {
             }*/
 
             // Find Peaks
-            findPeaks(magnitude, SAMPLES / 2, ecg_freq_peaks, peak_count, ecg_freq_height, ecg_freq_threshold, ecg_freq_distance, ecg_freq_prominence, ecg_freq_rel_height, 0.75, ecg_freq_widths);
+            findPeaks(magnitude, SAMPLES / 2, ecg_freq_peaks, ecg_freq_peak_count, ecg_freq_peak_height, ecg_freq_peak_threshold, ecg_freq_peak_distance, ecg_freq_peak_prominence, ecg_freq_peak_width, ecg_freq_peak_rel_height, ecg_freq_peak_widths);
 
             //Serial.println("Printing Peaks");
             /*for (int i = 0; i < peak_count; i++) {
@@ -99,7 +118,7 @@ void FFTTask(void *parameter) {
             }*/
 
             // Find Valleys
-            findValleys(magnitude, SAMPLES / 2, ecg_freq_valleys, valley_count, ecg_freq_valley_height, ecg_freq_valley_threshold, ecg_freq_distance, ecg_freq_valley_prominence, ecg_freq_valley_rel_height, 0, ecg_freq_valley_widths);
+            findValleys(magnitude, SAMPLES / 2, ecg_freq_valleys, ecg_freq_valley_count, ecg_freq_valley_height, ecg_freq_valley_threshold, ecg_freq_peak_distance, ecg_freq_valley_prominence, ecg_freq_valley_width, ecg_freq_valley_rel_height, ecg_freq_valley_widths);
 
             // Store and print valley results
             //Serial.println("Printing Valleys");
@@ -111,11 +130,11 @@ void FFTTask(void *parameter) {
             }*/
 
             //if there's more than 1 peak, find the distance between peaks/valleys in frequency domain
-           float peak_d[peak_count - 1];
-           float valley_d[valley_count - 1];           
-           if (peak_count > 1) {
+           float peak_d[ecg_freq_peak_count - 1];
+           float valley_d[ecg_freq_valley_count - 1];           
+           if (ecg_freq_peak_count > 1) {
               //Serial.println("Printing Frequency Distance Between Peaks");
-              peak_distance(ecg_freq_peaks, peak_count, peak_d, "frequency");
+              peak_distance(ecg_freq_peaks, ecg_freq_peak_count, peak_d, "frequency");
               /*
               for (int i = 0; i < peak_count - 1; i++) {
                 Serial.println(peak_d[i], 6);
@@ -131,8 +150,8 @@ void FFTTask(void *parameter) {
             } 
 */
             //standard deviation of distances between peaks, valleys
-            peak_distance_meanVal = mean(peak_d, peak_count - 1);
-            peak_distance_stdDev = standardDeviation(peak_d, peak_count - 1, peak_distance_meanVal);
+            peak_distance_meanVal = mean(peak_d, ecg_freq_peak_count - 1);
+            peak_distance_stdDev = standardDeviation(peak_d, ecg_freq_peak_count - 1, peak_distance_meanVal);
             
             //float valley_distance_meanVal = mean(valley_d, valley_count - 1);
             //float valley_distance_stdDev = standardDeviation(vallevalley_dys, valley_count - 1, valley_distance_meanVal);
@@ -193,13 +212,13 @@ void loop() {
     }            
 
     //peaks in time domain ecg
-    findPeaks(dataBuffer, SAMPLES, ecg_time_peaks, ecg_time_peak_count, 1, 0.005, 0.3*SAMPLING_FREQUENCY, 0.2, 0, 0, ecg_time_peaks_widths);
+    findPeaks(dataBuffer, SAMPLES, ecg_time_peaks, ecg_time_peak_count, ecg_time_peak_height, ecg_time_peak_threshold, ecg_time_peak_distance, ecg_time_peak_prominence, ecg_time_peak_width, ecg_time_peak_rel_height, ecg_time_peak_widths);
     //Serial.println("Printing Peaks");
     //Serial.println(ecg_time_peak_count);
     float ecg_median = peak_median(ecg_time_peaks, ecg_time_peak_count);
     //Serial.println("Time Domain Peak Median of ECG");
-    Serial.println("Median: "+String(ecg_median));
-    Serial.println("Std: "+String(peak_distance_stdDev));
+    Serial.println("peak_distance_stdDev: "+String(peak_distance_stdDev));
+    Serial.println("Num_Peaks: "+String(ecg_freq_peak_count));
 
     //ppg standardization
     float ppg_meanVal = mean(ppgBuffer, SAMPLES);
@@ -208,7 +227,7 @@ void loop() {
       ppgBuffer[i] = (ppgBuffer[i] - ppg_meanVal) / ppg_stdDev;
     }  
 
-    findValleys(ppgBuffer, SAMPLES, ppg_time_valleys, ppg_time_valley_count, 0.5, 0, 0, 0, 0, 0, ppg_time_valleys_widths);
+    findValleys(ppgBuffer, SAMPLES, ppg_time_valleys, ppg_time_valley_count, ppg_time_valley_height, 0.0, 0.0, 0.0, 0.0, 0.0, ppg_time_valley_widths);
     //if there's more than 1 peak, find the time between peaks
     float ppg_valley_d[ppg_time_valley_count - 1];
     if (ppg_time_valley_count > 1) {
@@ -218,83 +237,47 @@ void loop() {
         Serial.println(ppg_valley_d[i], 6);
         }*/
     }
-    float diastolic_time = mean(ppg_valley_d, ppg_time_valley_count - 1);
+    diastolic_time = mean(ppg_valley_d, ppg_time_valley_count - 1);
     //float diastolic_area = trapezoidal(ppg_time_valleys, ppg_time_valley_count)
 
     //Serial.println("[INFO] Received Data, Sending to FFT Task...");
     xQueueOverwrite(dataQueue, dataBuffer);
 }
 
-void findPeaks(float x[], int size, int peaks[], int &peak_count, float height, float threshold, int distance, float prominence, float rel_height, float min_width, float widths[]) {
-    peak_count = 0;
-    int last_peak_index = -distance;
-
-    for (int i = 2; i < size - 2; i++) {
-        float current = x[i];
-        float prev1 = x[i - 1], prev2 = x[i - 2];
-        float next1 = x[i + 1], next2 = x[i + 2];
-
-        // Check if the current point is a peak
-        if (current > prev1 && current > next1 && current > prev2 && current > next2 &&
-            current >= height && current >= threshold &&
-            (current - prev1) > prominence && (current - next1) > prominence) {
-
-            if (i - last_peak_index >= distance) {
-                last_peak_index = i;
-                float peakHeight = current * rel_height;
-
-                // Find left and right width boundaries
-                int left = i, right = i;
-                while (left > 0 && x[left] > peakHeight) left--;
-                while (right < size - 1 && x[right] > peakHeight) right++;
-
-                float width = right - left;
-                if (width >= min_width) {  // Only store if width meets the minimum requirement
-                    peaks[peak_count] = i;
-                    widths[peak_count] = width;
-                    peak_count++;
-                    if (peak_count >= (size / 10)) break;
+void findPeaks(float x[], int size, int peaks[], int &peakCount, float height, float threshold, int distance, float prominence, float width, float rel_height, float widths[]) {
+    peakCount = 0;
+    
+    for (int i = 1; i < size - 1; i++) {
+        if (x[i] > x[i - 1] && x[i] > x[i + 1]) {  // Local maxima condition
+            float leftDiff = x[i] - x[i - 1];
+            float rightDiff = x[i] - x[i + 1];
+            
+            if (x[i] >= height && x[i] >= threshold && leftDiff >= prominence && rightDiff >= prominence) {
+                // Ensure distance condition is met
+                if (peakCount == 0 || (i - peaks[peakCount - 1]) >= distance) {
+                    peaks[peakCount] = i;
+                    
+                    // Calculate width at relative height
+                    float peakHeight = x[i] * rel_height;
+                    int left = i, right = i;
+                    while (left > 0 && x[left] > peakHeight) left--;
+                    while (right < size - 1 && x[right] > peakHeight) right++;
+                    widths[peakCount] = right - left;
+                    
+                    peakCount++;
                 }
             }
         }
     }
 }
 
-void findValleys(float x[], int size, int valleys[], int &valley_count, float height, float threshold, int distance, float prominence, float rel_height, float min_width, float widths[]) {
-    valley_count = 0;
-    int last_valley_index = -distance;
-
-    // Invert the signal for valley detection
-    float invertedMagnitude[size];
-    for (int i = 0; i < size; i++) {
-        invertedMagnitude[i] = -x[i];  // Invert the signal to treat valleys as peaks
-    }
-
-    for (int i = 2; i < size - 2; i++) {
-        float current = invertedMagnitude[i];
-        float prev1 = invertedMagnitude[i - 1], prev2 = invertedMagnitude[i - 2];
-        float next1 = invertedMagnitude[i + 1], next2 = invertedMagnitude[i + 2];
-
-        // Look for peaks in the inverted signal (which are valleys in the original)
-        if (current > prev1 && current > next1 && current > prev2 && current > next2 && 
-            current <= height && current <= threshold &&  // Relaxed height and threshold
-            (current - prev1) > prominence && (current - next1) > prominence) {
-
-            // Calculate width at half the valley depth
-            float valleyHeight = current * rel_height;
-            int left = i, right = i;
-            while (left > 0 && invertedMagnitude[left] > valleyHeight) left--;
-            while (right < size - 1 && invertedMagnitude[right] > valleyHeight) right++;
-            float width = right - left;
-
-            if (width >= min_width) {
-                valleys[valley_count] = i;
-                widths[valley_count] = width;
-                valley_count++;
-                if (valley_count >= (size / 10)) break;
-            }
-        }
-    }
+void findValleys(float x[], int size, int valleys[], int &valleyCount, float height, float threshold, int distance, float prominence, float width, float rel_height, float widths[]) {
+  float x_inv[size];
+  for(int i=0; i<size; i++){
+    x_inv[i]=-x[i];
+  }
+    
+  findPeaks(x_inv, size, valleys, valleyCount, height, threshold, distance, prominence, width, rel_height, widths);
 }
 
 String class_itos(int idx){
