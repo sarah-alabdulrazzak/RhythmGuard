@@ -24,7 +24,7 @@ except Exception as e:
     exit()
 
 # Step 2: Read ECG and PPG Data from CSV
-input_csv = r"arrhythmia_data\\Tachycardia\\t108s.csv"
+input_csv = r"f450s.csv"
 print(f"Reading ECG and PPG data from {input_csv}...")
 ecg_data = []
 ppg_data = []
