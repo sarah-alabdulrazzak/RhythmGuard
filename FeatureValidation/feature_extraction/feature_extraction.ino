@@ -128,6 +128,7 @@ void FFTTask(void *parameter) {
 
             // Calculate Diastolic Time
             float diastolic_time = float(calc_median_distance(ppg_valleys, ppg_valley_count))/SAMPLING_FREQUENCY;
+            
             /*if (ppg_valley_count > 1) {
                 float total_time = 0;
                 for (int i = 1; i < ppg_valley_count; i++) {
@@ -140,12 +141,14 @@ void FFTTask(void *parameter) {
             }*/
 
             // Print Diastolic Time
-            Serial.print("Diastolic Time: ");
-            Serial.println(diastolic_time, 6);
+            //Serial.print("Diastolic Time: ");
+            //Serial.println(diastolic_time, 6);
 
             findPeaks(vReal, SAMPLES, time_peaks, time_peak_count, 0.3, 0.005, 0.001 * SAMPLING_FREQUENCY, 0.2, 0, 0, time_peaks_widths);
             find_Valleys_Time(vReal, SAMPLES, time_valleys, time_valley_count, 0, 0, 0.1 * SAMPLING_FREQUENCY, 0.01, 0, 0, time_valley_widths);
-
+            float rr_median = float(calc_median_distance(time_peaks, time_peak_count));
+            Serial.print("Peak Time median distance: ");
+            Serial.println(rr_median);
             // Print PPG Valleys
             // Serial.println("PPG Time-Domain Valleys:");
             // for (int i = 0; i < ppg_valley_count; i++) {
@@ -191,9 +194,9 @@ void FFTTask(void *parameter) {
 
             // Print FFT Results
             for (int i = 0; i < SAMPLES; i++) {  
-                Serial.print(i);
+                Serial.print(0);
                 Serial.print(",");
-                Serial.println(ppgData_norm[i]);
+                Serial.println(0);
             }
 
             // Peak and Valley Detection
@@ -211,11 +214,9 @@ void FFTTask(void *parameter) {
             // Store and print valley results
             Serial.println("Printing Valleys");
             for (int i = 0; i < ppg_valley_count; i++) {
-                Serial.print(timeArr[ppg_valleys[i]]);
-                //Serial.print(0, 6);
+                Serial.print(0);
                 Serial.print(",");
-                //Serial.println(0, 6);
-                Serial.println(ppgData_norm[ppg_valleys[i]]);
+                Serial.println(0);
             }
 
             vTaskDelay(10 / portTICK_PERIOD_MS);  // 10 ms delay to reduce CPU load
@@ -565,7 +566,7 @@ void findPeaks_Noor(float x[], int size, int peaks[], int &peak_count,
     if(i==size-1){
       continue;
     }
-    if(x[i]<max_val){
+    if(x[i]<min_val){
       continue;
     }
     if(i>0 && x[i-1]>x[i]){
