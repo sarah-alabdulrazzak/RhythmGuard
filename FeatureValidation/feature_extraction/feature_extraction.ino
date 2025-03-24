@@ -34,8 +34,8 @@ float valley_widths[SAMPLES / 2];
 float valley_height = 0, valley_threshold = 0, valley_prominence = 0.15, valley_rel_height = 0.3;
 float valley_distance = 0;
 
-int ppg_valleys[SAMPLES / 2], ppg_valley_count = 0;
-float ppg_valleys_widths[SAMPLES / 2];
+int ppg_valleys[SAMPLES], ppg_valley_count = 0;
+float ppg_valleys_widths[SAMPLES];
 float ppg_threshold; 
 
 // Time-Domain Peak and Valley Detection Variables
@@ -124,7 +124,7 @@ void FFTTask(void *parameter) {
             normalize(ppgData_norm);
 
             //findValleys_PPG(ppgData, SAMPLES, ppg_valleys, ppg_valley_count, ppg_threshold);
-            findValleys_Noor(ppgData_norm, SAMPLES, ppg_valleys, ppg_valley_count, 0.3, 0.1, 50, 0, 0, 0, ppg_valleys_widths);
+            findValleys_Noor(ppgData_norm, SAMPLES, ppg_valleys, ppg_valley_count, 0.3, 0.1, 50, 0, 0, 5, ppg_valleys_widths);
 
             // Calculate Diastolic Time
             float diastolic_time = 0;
@@ -210,7 +210,7 @@ void FFTTask(void *parameter) {
 
             // Store and print valley results
             Serial.println("Printing Valleys");
-            for (int i = 0; i < valley_count; i++) {
+            for (int i = 0; i < ppg_valley_count; i++) {
                 Serial.print(timeArr[ppg_valleys[i]]);
                 //Serial.print(0, 6);
                 Serial.print(",");
@@ -459,7 +459,7 @@ void findValleys_PPG(float ppg_segment[], int size, int valleys[], int &valley_c
 }
 
 // Function to Find Valleys in a Signal By DeepSeek
-void findValleys_Noor(float x[], int size, int valleys[], int &valley_count, 
+void findValleys_DeepSeek(float x[], int size, int valleys[], int &valley_count, 
                       float height, float threshold, int distance, 
                       float prominence, float rel_height, float min_width, float widths[]) {
     valley_count = 0; // Initialize valley count to 0
@@ -502,4 +502,45 @@ void findValleys_Noor(float x[], int size, int valleys[], int &valley_count,
             }
         }
     }
+}
+
+void findValleys_Noor(float x[], int size, int valleys[], int &valley_count, 
+                      float max_val, float threshold, int distance, 
+                      float prominence, float rel_height, float width, float widths[]) {
+
+  valley_count=0;
+  int ctr=0;
+  for(int i=0; i<size; i++){
+    // Deal breakers
+    if(x[i]>max_val){
+      continue;
+    }
+    if(i>0 && x[i-1]<x[i]){
+      continue;
+    }
+    if(i<size-1 && x[i+1]<x[i]){
+      continue;
+    }
+    if(i>floor(width/2) && x[i-int(floor(width/2))]-x[i]<prominence){
+      continue;
+    }
+    if(i<size-1-floor(width/2) && x[i+int(floor(width/2))]-x[i]<prominence){
+      continue;
+    }
+
+    // Clustering neighboring valleys
+    if(valley_count>0 && i-valleys[valley_count-1]<distance){
+      int prevValleyWeight=ctr+1;
+      valleys[valley_count]=int(floor(((valleys[valley_count-1]*(prevValleyWeight))+i)/(prevValleyWeight+1)));
+      ctr++;
+      continue;
+    }
+    else{
+      ctr=0;
+    }
+
+    // Put it in valleys
+    valleys[valley_count]=i;
+    valley_count++;
+  }
 }

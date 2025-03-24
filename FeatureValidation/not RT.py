@@ -1,28 +1,16 @@
 import serial
 import csv
 import time
-import os
-import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
-from scipy.interpolate import interp1d
-from scipy.signal import find_peaks
+import numpy as np
 
-<<<<<<< Updated upstream
-# Serial Communication Configuration
-esp32_port = "COM3"  # Change this to your ESP32's port
-baud_rate = 115200
-SAMPLES = 1024  # Must match ESP32's SAMPLES
-=======
 # Step 1: Configure Serial Communication
 esp32_port = "COM3"  # Change this to your ESP32's port
 baud_rate = 115200
 SAMPLES = 1024  # Must match ESP32 SAMPLES
->>>>>>> Stashed changes
 fs = 125  # Sampling frequency in Hz
-timeout = 5  # Timeout for serial communication in seconds
+timeout = 2  # Timeout for serial communication in seconds
 
-# Connect to ESP32
 try:
     ser = serial.Serial(esp32_port, baud_rate, timeout=timeout)
     print(f"Serial communication established on {esp32_port} with baud rate {baud_rate}")
@@ -31,11 +19,7 @@ except Exception as e:
     exit()
 
 # Step 2: Read ECG and PPG Data from CSV
-<<<<<<< Updated upstream
-input_csv = r"f450s.csv"
-=======
 input_csv = "mimic_perform_non_af_009_data.csv"
->>>>>>> Stashed changes
 print(f"Reading ECG and PPG data from {input_csv}...")
 ecg_data = []
 ppg_data = []
@@ -46,7 +30,7 @@ try:
         next(reader)  # Skip the header row
         for row in reader:
             try:
-                ecg_data.append(float(row[0]))  # ECG is in the first column (index 2)
+                ecg_data.append(float(row[2]))  # ECG is in the third column (index 2)
                 ppg_data.append(float(row[1]))  # PPG is in the second column (index 1)
             except ValueError:
                 print(f"Warning: Could not convert data to float. Skipping this row.")
@@ -54,16 +38,18 @@ except FileNotFoundError:
     print(f"Error: The file {input_csv} was not found.")
     exit()
 
-# Send ECG and PPG Data in Chunks
+print(f"Total ECG data points: {len(ecg_data)}")
+print(f"Total PPG data points: {len(ppg_data)}")
+
+# Step 3: Send ECG and PPG Data to ESP32 in chunks
 fft_results = []
 print(f"Sending ECG and PPG data to ESP32 in chunks of {SAMPLES}...")
 
 plt.figure()
 plt.xlabel("Frequency (Hz)")
 plt.ylabel("Magnitude")
-plt.title("FFT")
+plt.title("FFT with Peaks and Valleys")
 
-# Sending ECG and PPG Data
 for i in range(0, len(ecg_data), SAMPLES):
     chunk_ecg = ecg_data[i:i + SAMPLES]
     chunk_ppg = ppg_data[i:i + SAMPLES]
@@ -84,52 +70,22 @@ for i in range(0, len(ecg_data), SAMPLES):
             print(f"Error while sending data to ESP32: {e}")
             break
 
-
-    # Receive FFT Results from ESP32
+    # Step 4: Receive FFT Results from ESP32
     fft_chunk = []
     peaks_x = []
     peaks_y = []
     valleys_x = []
     valleys_y = []
-    print("Receiving FFT results from ESP32...")      
 
-    #receive time domain peak median
-    '''while True:
-        line = ser.readline().decode().strip()
-        if line == "Time Domain Peak Median of ECG":          
-            break'''
-    #ser.readline()
-    #line = ser.readline().decode().strip()
-    #print(line)
-    #rr_median = float(line)
-    
+    print("Receiving FFT results from ESP32...")
 
-    #line = ser.readline().decode().strip()
-    #print(line)
-    #rr_std = float(line)
-    
-    print(ser.readline().decode())
-    print(ser.readline().decode())
-
-    """
-    # Receive distance between peaks in time domain
+    # Receive FFT data (frequency, magnitude pairs)
     while True:
-        line = ser.readline().decode().strip()
-        if line == "FFT Results":
-            break  # End of distance between peaks data
-        if line:
-            try:
-                print(line)
-            except ValueError:
-                print(f"Warning: Could not parse FFT result line: {line}. Skipping this line.")    
-    """
+        line = ser.readline().decode('utf-8', errors='ignore').strip()
 
-    # Receive FFT Results (frequency, magnitude)
-    '''while True:
-        line = ser.readline().decode().strip()
         if line == "Printing Peaks":
-            break  # End of FFT data, peaks start here
-        if line:
+            break
+        if line:  # Only process lines with a comma (i.e., frequency,magnitude)
             try:
                 frequency, magnitude = map(float, line.split(","))
                 fft_chunk.append((frequency, magnitude))
@@ -138,10 +94,11 @@ for i in range(0, len(ecg_data), SAMPLES):
 
     # Receive Peaks Data
     while True:
-        line = ser.readline().decode().strip()
+        line = ser.readline().decode('utf-8', errors='ignore').strip()
+
         if line == "Printing Valleys":
-            break  # End of peak data
-        if line:
+            break
+        if line:  # Only process lines with a comma (i.e., frequency,magnitude)
             try:
                 frequency, magnitude = map(float, line.split(","))
                 peaks_x.append(frequency)
@@ -151,27 +108,17 @@ for i in range(0, len(ecg_data), SAMPLES):
 
     # Receive Valleys Data
     while True:
-        line = ser.readline().decode().strip()
-        if line == "Printing Frequency Distance Between Peaks":
-            break  # End of peak data
-        if line:
+        line = ser.readline().decode('utf-8', errors='ignore').strip()
+
+        if line == "End":
+            break
+        if line:  # Only process lines with a comma (i.e., frequency,magnitude)
             try:
                 frequency, magnitude = map(float, line.split(","))
                 valleys_x.append(frequency)
                 valleys_y.append(magnitude)
             except ValueError:
                 print(f"Warning: Could not parse valley result line: {line}. Skipping this line.")
-
-    # Receive Frequency Distance Between Peaks
-    while True:
-        line = ser.readline().decode().strip()
-        if line == "End":
-            break  # End of Frequency Distance Between Peaks
-        if line:
-            try:
-                print(line)
-            except ValueError:
-                print(f"Warning: Could not parse peak frequency distance result line: {line}. Skipping this line.")
 
     # Extract FFT frequencies and magnitudes
     x = [freq for freq, _ in fft_chunk]
@@ -180,19 +127,22 @@ for i in range(0, len(ecg_data), SAMPLES):
     # Plot the FFT data
     plt.cla()
     plt.plot(x, y, color='b', label="FFT")  # FFT data in blue
-    plt.scatter(peaks_x, peaks_y, color='r', label="Peaks")  # Peaks in red
-    plt.scatter(valleys_x, valleys_y, color='g', label="Valleys")  # Valleys in green
+
+    # Plot Peaks (if available)
+    if peaks_x:
+        plt.scatter(peaks_x, peaks_y, color='r', label=f"Peaks ({len(peaks_x)})")
+
+    # Plot Valleys (if available)
+    if valleys_x:
+        plt.scatter(valleys_x, valleys_y, color='g', label=f"Valleys ({len(valleys_x)})")
+
     plt.xlabel("Frequency (Hz)")
     plt.ylabel("Magnitude")
-<<<<<<< Updated upstream
-    plt.xlim([0, 20])
-    plt.title("FFT of ECG and PPG with Peaks and Valleys")
-=======
     plt.title("FFT with Peaks and Valleys")
->>>>>>> Stashed changes
     plt.legend()
     plt.pause(0.1)  # Pause to update the plot
 
-    fft_results.extend(fft_chunk)'''
+    # Store FFT results
+    fft_results.extend(fft_chunk)
 
 plt.close()
