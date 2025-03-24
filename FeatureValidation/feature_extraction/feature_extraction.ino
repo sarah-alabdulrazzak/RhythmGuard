@@ -127,8 +127,8 @@ void FFTTask(void *parameter) {
             findValleys_Noor(ppgData_norm, SAMPLES, ppg_valleys, ppg_valley_count, 0.3, 0.1, 50, 0, 0, 5, ppg_valleys_widths);
 
             // Calculate Diastolic Time
-            float diastolic_time = 0;
-            if (ppg_valley_count > 1) {
+            float diastolic_time = calc_median_distance(ppg_valleys, ppg_valley_count)/SAMPLING_FREQUENCY;
+            /*if (ppg_valley_count > 1) {
                 float total_time = 0;
                 for (int i = 1; i < ppg_valley_count; i++) {
                     // Calculate the time difference between consecutive valleys
@@ -137,7 +137,7 @@ void FFTTask(void *parameter) {
                 }
                 // Average the time differences to get the mean diastolic time
                 diastolic_time = total_time / (ppg_valley_count - 1);
-            }
+            }*/
 
             // Print Diastolic Time
             Serial.print("Diastolic Time: ");
@@ -542,5 +542,21 @@ void findValleys_Noor(float x[], int size, int valleys[], int &valley_count,
     // Put it in valleys
     valleys[valley_count]=i;
     valley_count++;
+  }
+}
+
+int calc_median_distance(int points[], int size){
+  if(size<2){
+    return 0;
+  }
+  int distances[size-1];
+  for(int i=0; i<size-1; i++){
+    distances[i]=points[i+1]-points[i];
+  }
+  if((size-1)%2==0){//if even
+    return (distances[(size-1)/2]+distances[((size-1)/2)+1])/2;
+  }
+  else{
+    return int(floor(distances[(size-1)/2]));
   }
 }
