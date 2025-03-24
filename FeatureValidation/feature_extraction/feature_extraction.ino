@@ -28,6 +28,7 @@ float peak_frequencies[SAMPLES / 2];
 float peak_height = 0;  
 float threshold = 0, peak_prominence = 0.2, peak_width = 0, peak_rel_height = 1; 
 int peak_distance = 0;  
+float dist_std=0;
 
 int valleys[SAMPLES / 2], valley_count = 0;
 float valley_widths[SAMPLES / 2];
@@ -36,16 +37,16 @@ float valley_distance = 0;
 
 int ppg_valleys[SAMPLES], ppg_valley_count = 0;
 float ppg_valleys_widths[SAMPLES];
-float ppg_threshold; 
-float diastolic_time;
+float ppg_threshold=0; 
+float diastolic_time=0;
 
 // Time-Domain Peak and Valley Detection Variables
 int time_peaks[SAMPLES / 2], time_peak_count = 0;
 float time_peaks_widths[SAMPLES / 2];
 int time_valleys[SAMPLES / 2], time_valley_count = 0;
 float time_valley_widths[SAMPLES / 2];
-float rr_std;
-float rr_median;
+float rr_std=0;
+float rr_median=0;
 
 //Task and Queue Handles
 TaskHandle_t FFTTaskHandle;   
@@ -151,8 +152,8 @@ void FFTTask(void *parameter) {
             find_Valleys_Time(vReal, SAMPLES, time_valleys, time_valley_count, 0, 0, 0.1 * SAMPLING_FREQUENCY, 0.01, 0, 0, time_valley_widths);
             rr_median = float(calc_median_distance(time_peaks, time_peak_count));
             rr_std = float(calc_std_distance(time_peaks, time_peak_count));
-            Serial.print("Peak Time std distance: ");
-            Serial.println(rr_std);
+            Serial.print("dist_std of prev chunk: ");
+            Serial.println(dist_std);
             // Print PPG Valleys
             // Serial.println("PPG Time-Domain Valleys:");
             // for (int i = 0; i < ppg_valley_count; i++) {
@@ -207,6 +208,7 @@ void FFTTask(void *parameter) {
             findPeaks(magnitude, SAMPLES / 2, peaks, peak_count, peak_height, threshold, peak_distance, peak_prominence, peak_rel_height, 0, peak_widths);
             findValleys(magnitude, SAMPLES / 2, valleys, valley_count, valley_height, valley_threshold, valley_distance, valley_prominence, valley_rel_height, 0, valley_widths);
 
+            dist_std= float(calc_std_distance(peaks, peak_count))*frequency_step;
 
             Serial.println("Printing Peaks");
             for (int i = 0; i < peak_count; i++) {
