@@ -551,6 +551,53 @@ void findValleys_Noor(float x[], int size, int valleys[], int &valley_count,
   }
 }
 
+void findPeaks_Noor(float x[], int size, int peaks[], int &peak_count, 
+                      float min_val, int distance, 
+                      float prominence, float width, float widths[]) {
+
+  peak_count=0;
+  int ctr=0;
+  for(int i=0; i<size; i++){
+    // Deal breakers
+    if(i==0){
+      continue;
+    }
+    if(i==size-1){
+      continue;
+    }
+    if(x[i]<max_val){
+      continue;
+    }
+    if(i>0 && x[i-1]>x[i]){
+      continue;
+    }
+    if(i<size-1 && x[i+1]>x[i]){
+      continue;
+    }
+    if(i>floor(width/2) && x[i]-x[i-int(floor(width/2))]<prominence){
+      continue;
+    }
+    if(i<size-1-floor(width/2) && x[i]-x[i+int(floor(width/2))]<prominence){
+      continue;
+    }
+
+    // Clustering neighboring peaks
+    if(peak_count>0 && i-valleys[peak_count-1]<distance){
+      int prevPeakWeight=ctr+1;
+      peaks[peak_count]=int(floor(((peaks[peak_count-1]*(prevPeakWeight))+i)/(prevPeakWeight+1)));
+      ctr++;
+      continue;
+    }
+    else{
+      ctr=0;
+    }
+
+    // Put it in peaks
+    peaks[peak_count]=i;
+    peak_count++;
+  }
+}
+
 int calc_median_distance(int points[], int size){
   if(size<2){
     return 0;
