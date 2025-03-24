@@ -8,10 +8,17 @@ import matplotlib.pyplot as plt
 from scipy.interpolate import interp1d
 from scipy.signal import find_peaks
 
+<<<<<<< Updated upstream
 # Serial Communication Configuration
 esp32_port = "COM3"  # Change this to your ESP32's port
 baud_rate = 115200
 SAMPLES = 1024  # Must match ESP32's SAMPLES
+=======
+# Step 1: Configure Serial Communication
+esp32_port = "COM3"  # Change this to your ESP32's port
+baud_rate = 115200
+SAMPLES = 1024  # Must match ESP32 SAMPLES
+>>>>>>> Stashed changes
 fs = 125  # Sampling frequency in Hz
 timeout = 5  # Timeout for serial communication in seconds
 
@@ -24,7 +31,11 @@ except Exception as e:
     exit()
 
 # Step 2: Read ECG and PPG Data from CSV
+<<<<<<< Updated upstream
 input_csv = r"f450s.csv"
+=======
+input_csv = "mimic_perform_non_af_009_data.csv"
+>>>>>>> Stashed changes
 print(f"Reading ECG and PPG data from {input_csv}...")
 ecg_data = []
 ppg_data = []
@@ -173,8 +184,12 @@ for i in range(0, len(ecg_data), SAMPLES):
     plt.scatter(valleys_x, valleys_y, color='g', label="Valleys")  # Valleys in green
     plt.xlabel("Frequency (Hz)")
     plt.ylabel("Magnitude")
+<<<<<<< Updated upstream
     plt.xlim([0, 20])
     plt.title("FFT of ECG and PPG with Peaks and Valleys")
+=======
+    plt.title("FFT with Peaks and Valleys")
+>>>>>>> Stashed changes
     plt.legend()
     plt.pause(0.1)  # Pause to update the plot
 
