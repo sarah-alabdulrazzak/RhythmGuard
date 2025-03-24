@@ -124,10 +124,10 @@ void FFTTask(void *parameter) {
             normalize(ppgData_norm);
 
             //findValleys_PPG(ppgData, SAMPLES, ppg_valleys, ppg_valley_count, ppg_threshold);
-            findValleys_Noor(ppgData_norm, SAMPLES, ppg_valleys, ppg_valley_count, 0.3, 0.1, 50, 0, 0, 5, ppg_valleys_widths);
+            findValleys_Noor(ppgData_norm, SAMPLES, ppg_valleys, ppg_valley_count, 0.3, 50, 0, 5, ppg_valleys_widths);
 
             // Calculate Diastolic Time
-            float diastolic_time = calc_median_distance(ppg_valleys, ppg_valley_count)/SAMPLING_FREQUENCY;
+            float diastolic_time = float(calc_median_distance(ppg_valleys, ppg_valley_count))/SAMPLING_FREQUENCY;
             /*if (ppg_valley_count > 1) {
                 float total_time = 0;
                 for (int i = 1; i < ppg_valley_count; i++) {
@@ -505,13 +505,19 @@ void findValleys_DeepSeek(float x[], int size, int valleys[], int &valley_count,
 }
 
 void findValleys_Noor(float x[], int size, int valleys[], int &valley_count, 
-                      float max_val, float threshold, int distance, 
-                      float prominence, float rel_height, float width, float widths[]) {
+                      float max_val, int distance, 
+                      float prominence, float width, float widths[]) {
 
   valley_count=0;
   int ctr=0;
   for(int i=0; i<size; i++){
     // Deal breakers
+    if(i==0){
+      continue;
+    }
+    if(i==size-1){
+      continue;
+    }
     if(x[i]>max_val){
       continue;
     }
