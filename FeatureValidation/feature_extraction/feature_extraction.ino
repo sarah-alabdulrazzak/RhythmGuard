@@ -149,8 +149,8 @@ void FFTTask(void *parameter) {
 
             findPeaks(vReal, SAMPLES, time_peaks, time_peak_count, 0.3, 0.005, 0.001 * SAMPLING_FREQUENCY, 0.2, 0, 0, time_peaks_widths);
             find_Valleys_Time(vReal, SAMPLES, time_valleys, time_valley_count, 0, 0, 0.1 * SAMPLING_FREQUENCY, 0.01, 0, 0, time_valley_widths);
-            rr_median = float(calc_median_distance(time_peaks, time_peak_count))/SAMPLING_FREQUENCY;
-            rr_std = float(calc_std_distance(time_peaks, time_peak_count))/SAMPLING_FREQUENCY;
+            rr_median = float(calc_median_distance(time_peaks, time_peak_count));
+            rr_std = float(calc_std_distance(time_peaks, time_peak_count));
             Serial.print("Peak Time std distance: ");
             Serial.println(rr_std);
             // Print PPG Valleys
