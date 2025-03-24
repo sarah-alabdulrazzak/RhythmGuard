@@ -37,12 +37,15 @@ float valley_distance = 0;
 int ppg_valleys[SAMPLES], ppg_valley_count = 0;
 float ppg_valleys_widths[SAMPLES];
 float ppg_threshold; 
+float diastolic_time;
 
 // Time-Domain Peak and Valley Detection Variables
 int time_peaks[SAMPLES / 2], time_peak_count = 0;
 float time_peaks_widths[SAMPLES / 2];
 int time_valleys[SAMPLES / 2], time_valley_count = 0;
 float time_valley_widths[SAMPLES / 2];
+float rr_std;
+float rr_median;
 
 //Task and Queue Handles
 TaskHandle_t FFTTaskHandle;   
@@ -127,7 +130,7 @@ void FFTTask(void *parameter) {
             findValleys_Noor(ppgData_norm, SAMPLES, ppg_valleys, ppg_valley_count, 0.3, 50, 0, 5, ppg_valleys_widths);
 
             // Calculate Diastolic Time
-            float diastolic_time = float(calc_median_distance(ppg_valleys, ppg_valley_count))/SAMPLING_FREQUENCY;
+            diastolic_time = float(calc_median_distance(ppg_valleys, ppg_valley_count))/SAMPLING_FREQUENCY;
             
             /*if (ppg_valley_count > 1) {
                 float total_time = 0;
@@ -146,9 +149,10 @@ void FFTTask(void *parameter) {
 
             findPeaks(vReal, SAMPLES, time_peaks, time_peak_count, 0.3, 0.005, 0.001 * SAMPLING_FREQUENCY, 0.2, 0, 0, time_peaks_widths);
             find_Valleys_Time(vReal, SAMPLES, time_valleys, time_valley_count, 0, 0, 0.1 * SAMPLING_FREQUENCY, 0.01, 0, 0, time_valley_widths);
-            float rr_median = float(calc_median_distance(time_peaks, time_peak_count));
-            Serial.print("Peak Time median distance: ");
-            Serial.println(rr_median);
+            rr_median = float(calc_median_distance(time_peaks, time_peak_count))/SAMPLING_FREQUENCY;
+            rr_std = float(calc_std_distance(time_peaks, time_peak_count))/SAMPLING_FREQUENCY;
+            Serial.print("Peak Time std distance: ");
+            Serial.println(rr_std);
             // Print PPG Valleys
             // Serial.println("PPG Time-Domain Valleys:");
             // for (int i = 0; i < ppg_valley_count; i++) {
@@ -193,7 +197,7 @@ void FFTTask(void *parameter) {
             }
 
             // Print FFT Results
-            for (int i = 0; i < SAMPLES; i++) {  
+            for (int i = 0; i < SAMPLES/2; i++) {  
                 Serial.print(0);
                 Serial.print(",");
                 Serial.println(0);
@@ -413,6 +417,24 @@ void standardizeSignal(float signal[], int size) {
     }
 }
 
+float getStdDev(int arr[], int size){
+  float mean = 0.0, stdDev = 0.0;
+
+  // Compute mean
+  for (int i = 0; i < size; i++) {
+      mean += float(arr[i]);
+  }
+  mean /= size;
+
+  // Compute standard deviation
+  for (int i = 0; i < size; i++) {
+    stdDev += (arr[i] - mean) * (arr[i] - mean);
+  }
+  stdDev = sqrt(stdDev / size);
+
+  return stdDev;
+}
+
 // Function to calculate the 25th percentile
 float calculatePercentile(float signal[], int size, float percentile) {
     float sorted[size];
@@ -613,4 +635,15 @@ int calc_median_distance(int points[], int size){
   else{
     return int(floor(distances[(size-1)/2]));
   }
+}
+
+int calc_std_distance(int points[], int size){
+  if(size<2){
+    return 0;
+  }
+  int distances[size-1];
+  for(int i=0; i<size-1; i++){
+    distances[i]=points[i+1]-points[i];
+  }
+  return getStdDev(distances, size);
 }

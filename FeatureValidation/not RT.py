@@ -139,6 +139,7 @@ for i in range(0, len(ecg_data), SAMPLES):
     plt.xlabel("Frequency (Hz)")
     plt.ylabel("Magnitude")
     plt.title("FFT with Peaks and Valleys")
+    plt.xlim(0,20)
     plt.legend()
     plt.pause(0.1)  # Pause to update the plot
 
