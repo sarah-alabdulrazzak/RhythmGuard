@@ -148,8 +148,11 @@ void FFTTask(void *parameter) {
             //Serial.print("Diastolic Time: ");
             //Serial.println(diastolic_time, 6);
 
-            findPeaks(vReal, SAMPLES, time_peaks, time_peak_count, 0.3, 0.005, 0.001 * SAMPLING_FREQUENCY, 0.2, 0, 0, time_peaks_widths);
-            find_Valleys_Time(vReal, SAMPLES, time_valleys, time_valley_count, 0, 0, 0.1 * SAMPLING_FREQUENCY, 0.01, 0, 0, time_valley_widths);
+            //findPeaks(vReal, SAMPLES, time_peaks, time_peak_count, 0.3, 0.005, 0.001 * SAMPLING_FREQUENCY, 0.2, 0, 0, time_peaks_widths);
+            //void findPeaks_Noor(float x[], int size, int peaks[], int &peak_count,float min_val, int distance, float prominence, float width, float widths[])
+            findPeaks_Noor(vReal, SAMPLES, time_peaks, time_peak_count,0.3, 0.0025, 0.001 * SAMPLING_FREQUENCY, 0.2, time_peaks_widths);
+            //find_Valleys_Time(vReal, SAMPLES, time_valleys, time_valley_count, 0, 0, 0.1 * SAMPLING_FREQUENCY, 0.01, 0, 0, time_valley_widths);
+            findPeaks_Noor(vReal, SAMPLES, time_valleys, time_valley_count, 0, 0, 0.1 * SAMPLING_FREQUENCY, 0.01, time_valley_widths);
             rr_median = float(calc_median_distance(time_peaks, time_peak_count));
             rr_std = float(calc_std_distance(time_peaks, time_peak_count));
             Serial.print("dist_std of prev chunk: ");
@@ -199,9 +202,9 @@ void FFTTask(void *parameter) {
 
             // Print FFT Results
             for (int i = 0; i < SAMPLES/2; i++) {  
-                Serial.print(0);
+                Serial.print(frequencies[i]);
                 Serial.print(",");
-                Serial.println(0);
+                Serial.println(magnitude[i]);
             }
 
             // Peak and Valley Detection
@@ -233,7 +236,7 @@ void FFTTask(void *parameter) {
 }
 
 void setup() {
-    Serial.begin(115200);
+    Serial.begin(921600);
     delay(1000);  // Wait for ESP32 boot messages
     while (!Serial) { delay(10); }
 
