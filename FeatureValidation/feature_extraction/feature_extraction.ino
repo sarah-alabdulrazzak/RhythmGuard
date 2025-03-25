@@ -1,9 +1,10 @@
 #include <arduinoFFT.h>  
-#include "Arduino.h"
 #include <stdlib.h>
+#include "Arduino.h"
+#include "random_forest.h"
 
-#define SAMPLES 1024          // Must be a power of 2
-#define SAMPLING_FREQUENCY 125 // Hz
+#define SAMPLES 1024          
+#define SAMPLING_FREQUENCY 125 
 
 // FFT Object
 ArduinoFFT<float> FFT;  
@@ -16,32 +17,36 @@ float vImag[SAMPLES];
 float ppgData[SAMPLES]; 
 float frequencies[SAMPLES / 2];
 float magnitude[SAMPLES / 2];
-float invertedMagnitude[SAMPLES / 2]; 
+float invertedMagnitude[SAMPLES / 2];
+float timeArr[SAMPLES]; 
 
-int SCALE_FACTOR = 1000;
 
 // Peak and Valley Detection Variables
 int peaks[SAMPLES / 2], peak_count = 0;
 float peak_widths[SAMPLES / 2];
 float peak_frequencies[SAMPLES / 2];
-float peak_height = 0;  
-float threshold = 0, peak_prominence = 0.2, peak_width = 0, peak_rel_height = 1; 
-int peak_distance = 0;  
 
 int valleys[SAMPLES / 2], valley_count = 0;
 float valley_widths[SAMPLES / 2];
-float valley_height = 0, valley_threshold = 0, valley_prominence = 0.15, valley_rel_height = 0.3;
 float valley_distance = 0;
 
-int ppg_valleys[SAMPLES / 2], ppg_valley_count = 0;
-float ppg_valleys_widths[SAMPLES / 2];
-float ppg_threshold; 
+float peak_median = 0;
+float valley_median = 0;
+float diff_median = 0;
 
 // Time-Domain Peak and Valley Detection Variables
 int time_peaks[SAMPLES / 2], time_peak_count = 0;
 float time_peaks_widths[SAMPLES / 2];
 int time_valleys[SAMPLES / 2], time_valley_count = 0;
 float time_valley_widths[SAMPLES / 2];
+float rr_std=0;
+float ss_median=0;
+
+int ppg_peaks[SAMPLES], ppg_peak_count = 0;
+float ppg_peaks_widths[SAMPLES];
+float ppg_threshold=0; 
+float systolic_time=0;
+float systolic_area = 0;
 
 //Task and Queue Handles
 TaskHandle_t FFTTaskHandle;   
@@ -56,10 +61,6 @@ void FFTTask(void *parameter) {
 
             Serial.println("[INFO] Processing FFT...");
 
-            // Standardization
-            // standardizeSignal(fftBuffer, SAMPLES);  // ECG Standardization
-            // standardizeSignal(ppgBuffer, SAMPLES);  // PPG Standardization
-
             // Prepare Input
             for (int i = 0; i < SAMPLES; i++) {
                 vReal[i] = ecgBuffer[i];
@@ -67,117 +68,127 @@ void FFTTask(void *parameter) {
                 ppgData[i] = ppgBuffer[i];
             }
 
-            // Serial.println("[INFO] Printing PPG Signal...");
-            // for (int i = 0; i < SAMPLES; i++) {
-            //     Serial.println(ppgBuffer[i]);
-            // }
-
-
-            // Time-domain Processing
-            // findValleys_PPG(ppgData, SAMPLES, ppg_valleys, ppg_valley_count, -0.05, 0.005, 10, 0.01, 0.5, 3, ppg_valleys_widths, 100);
-
-            // ppg_threshold = calculatePercentile(ppgData, SAMPLES, 50.0 / 100.0);
-
-            // Calculate the threshold dynamically as a percentage of the signal's mean or median
-            float mean_value = 0;
-            for (int i = 0; i < SAMPLES; i++) {
-                mean_value += ppgBuffer[i];
-            }
-            mean_value /= SAMPLES;
-
-            float ppg_threshold = mean_value * 0.7;  // Set a threshold as 70% of the signal's mean value
-
-            findValleys_PPG(ppgData, SAMPLES, ppg_valleys, ppg_valley_count, ppg_threshold);
-
-            // Calculate Diastolic Time
-            float diastolic_time = 0;
-            if (ppg_valley_count > 1) {
-                float total_time = 0;
-                for (int i = 1; i < ppg_valley_count; i++) {
-                    // Calculate the time difference between consecutive valleys
-                    float time_diff = (ppg_valleys[i] - ppg_valleys[i - 1]) / SAMPLING_FREQUENCY;  // in seconds
-                    total_time += time_diff;
-                }
-                // Average the time differences to get the mean diastolic time
-                diastolic_time = total_time / (ppg_valley_count - 1);
-            }
-
-            // Print Diastolic Time
-            Serial.print("Diastolic Time: ");
-            Serial.println(diastolic_time, 6);
-
-            findPeaks(vReal, SAMPLES, time_peaks, time_peak_count, 0.3, 0.005, 0.001 * SAMPLING_FREQUENCY, 0.2, 0, 0, time_peaks_widths);
-            find_Valleys_Time(vReal, SAMPLES, time_valleys, time_valley_count, 0, 0, 0.1 * SAMPLING_FREQUENCY, 0.01, 0, 0, time_valley_widths);
-
-            // Print PPG Valleys
-            // Serial.println("PPG Time-Domain Valleys:");
-            // for (int i = 0; i < ppg_valley_count; i++) {
-            //     Serial.print("Index: ");
-            //     Serial.print(ppg_valleys[i]);
-            //     Serial.print(", Value: ");
-            //     Serial.println(ppgData[ppg_valleys[i]], 6);
-            // }
-
-            // Print Diastolic Time
-            // Serial.print("Diastolic Time: ");
-            // Serial.println(diastolic_time, 6);
-           
-            // Print time-domain peaks
-            // Serial.println("Time-Domain Peaks:");
-            // for (int i = 0; i < time_peak_count; i++) {
-            //     Serial.print("Index: ");
-            //     Serial.print(time_peaks[i]);
-            //     Serial.print(", Value: ");
-            //     Serial.println(vReal[time_peaks[i]], 6);
-            // }
-
-            // // Print time-domain valleys
-            // Serial.println("Time-Domain Valleys:");
-            // for (int i = 0; i < time_valley_count; i++) {
-            //     Serial.print("Index: ");
-            //     Serial.print(time_valleys[i]);
-            //     Serial.print(", Value: ");
-            //     Serial.println(vReal[time_valleys[i]], 6);
-            // }
-
             // Perform FFT
             FFT.windowing(vReal, SAMPLES, FFT_WIN_TYP_HAMMING, FFT_FORWARD);
             FFT.compute(vReal, vImag, SAMPLES, FFT_FORWARD);
             FFT.complexToMagnitude(vReal, vImag, SAMPLES);
 
-            // Store Frequency Domain Results
             float frequency_step = (SAMPLING_FREQUENCY / 2.0) / (SAMPLES / 2);
             for (int i = 0; i < SAMPLES / 2; i++) {  
                 frequencies[i] = i * frequency_step;
                 magnitude[i] = vReal[i];
             }
-
-            // Print FFT Results
-            for (int i = 0; i < SAMPLES / 2; i++) {  
-                Serial.print(frequencies[i], 2);
-                Serial.print(",");
-                Serial.println(magnitude[i], 6);
+            findPeaks_Noor(magnitude, SAMPLES / 2, peaks, peak_count, 0.04, 30, 0.05, 5, peak_widths);
+            findValleys_Noor(magnitude, SAMPLES / 2, valleys, valley_count, 0.7, 0, 0.01, 2, valley_widths);
+            if (peak_count > 0) {
+              float peak_values[peak_count];
+              for (int i = 0; i < peak_count; i++) {
+                  peak_values[i] = magnitude[peaks[i]];
+              }
+              peak_median = calc_median_distance(peak_values, peak_count);
+            }
+             // Calculate median of FFT valley heights
+            float valley_median = 0;
+            if (valley_count > 0) {
+                float valley_values[valley_count];
+                for (int i = 0; i < valley_count; i++) {
+                    valley_values[i] = magnitude[valleys[i]];
+                }
+                valley_median = calc_median_distance(valley_values, valley_count);
             }
 
-            // Peak and Valley Detection
-            findPeaks(magnitude, SAMPLES / 2, peaks, peak_count, peak_height, threshold, peak_distance, peak_prominence, peak_rel_height, 0, peak_widths);
-            findValleys(magnitude, SAMPLES / 2, valleys, valley_count, valley_height, valley_threshold, valley_distance, valley_prominence, valley_rel_height, 0, valley_widths);
+            // Difference between median of FFT peaks and valleys
+            diff_median = abs(peak_median - valley_median);
 
-
-            Serial.println("Printing Peaks");
-            for (int i = 0; i < peak_count; i++) {
-                Serial.print(frequencies[peaks[i]], 2);
-                Serial.print(",");
-                Serial.println(magnitude[peaks[i]], 6);
+            // PPG Features
+            float ppgData_norm[SAMPLES];
+            for (int i = 0; i < SAMPLES; i++) {
+                ppgData_norm[i] = ppgData[i];
+            }
+            normalize(ppgData_norm);
+            findPeaks_Noor(ppgData_norm, SAMPLES, ppg_peaks, ppg_peak_count, 0.3, 50, 0, 5, ppg_peaks_widths);
+            float ppg_peaks_float[ppg_peak_count];
+            for (int i = 0; i < ppg_peak_count; i++) {
+                ppg_peaks_float[i] = float(ppg_peaks[i]);
+            }
+            systolic_time = float(calc_median_distance(ppg_peaks_float, ppg_peak_count)) / SAMPLING_FREQUENCY;
+            if (peak_count > 1) {
+                float peak_values[peak_count];
+                for (int i = 0; i < peak_count; i++) {
+                    peak_values[i] = ppgData_norm[peaks[i]];
+                }
+                systolic_area = trapezoidal(peak_values, peak_count);
             }
 
-            // Store and print valley results
-            Serial.println("Printing Valleys");
-            for (int i = 0; i < valley_count; i++) {
-                Serial.print(frequencies[valleys[i]], 2);
-                Serial.print(",");
-                Serial.println(magnitude[valleys[i]], 6);
+            // ECG Time Domain Features
+            findPeaks_Noor(vReal, SAMPLES, time_peaks, time_peak_count, 0.3, 1, 0, 3, time_peaks_widths);
+            findValleys_Noor(vReal, SAMPLES, time_valleys, time_valley_count, 0.3, 1, 0, 5, time_valley_widths);
+            float time_valleys_float[time_valley_count];
+            for (int i = 0; i < time_valley_count; i++) {
+                time_valleys_float[i] = float(time_valleys[i]);
             }
+            ss_median = float(calc_median_distance(time_valleys_float, time_valley_count));
+            rr_std = float(calc_std_distance(time_peaks, time_peak_count));
+
+            int predicted_class = random_forest_predict(systolic_area, diff_median, ss_median, systolic_time, rr_std);
+
+            
+            // // Print FFT Results
+            // for (int i = 0; i < SAMPLES / 2; i++) {  
+            //     Serial.print(frequencies[i], 2);
+            //     Serial.print(",");
+            //     Serial.println(magnitude[i], 6);
+            // }
+
+            // Serial.println("Printing Peaks");
+            // for (int i = 0; i < peak_count; i++) {
+            //     Serial.print(frequencies[peaks[i]], 2);
+            //     Serial.print(",");
+            //     Serial.println(magnitude[peaks[i]], 6);
+            // }
+
+            //  // Store and print valley results
+            // Serial.println("Printing Valleys");
+            // for (int i = 0; i < valley_count; i++) {
+            //     Serial.print(frequencies[valleys[i]], 2);
+            //     Serial.print(",");
+            //     Serial.println(magnitude[valleys[i]], 6);
+            // }
+
+            //  // Print PPG signal for graphing
+            // Serial.println("Printing PPG Signal:");
+            // for (int i = 0; i < SAMPLES; i++) {
+            //     Serial.print(i); // Print the index (time)
+            //     Serial.print(",");
+            //     Serial.println(ppgData_norm[i], 6);  // Print the normalized PPG signal value
+            // }
+
+            // // Print PPG Peaks
+            // Serial.println("Printing PPG Peaks:");
+            // for (int i = 0; i < ppg_peak_count; i++) {
+            //     Serial.print("Peak at index: ");
+            //     Serial.print(ppg_peaks[i]);
+            //     Serial.print(", Value: ");
+            //     Serial.println(ppgData_norm[ppg_peaks[i]], 6);
+            // }
+
+            // Serial.print("Systolic Area: ");
+            // Serial.println(systolic_area, 6);
+
+            // Serial.print("Systolic Time: ");
+            // Serial.println(systolic_time, 6);
+
+            // Serial.print("ss_median: ");
+            // Serial.println(ss_median, 6);
+
+            // Serial.print("rr_std: ");
+            // Serial.println(rr_std, 6);
+
+            // Serial.print("Difference of Medians (Peak - Valley): ");
+            // Serial.println(diff_median, 6);
+
+            Serial.print("Predicted Class:");
+            Serial.println(predicted_class, 6);
 
             vTaskDelay(10 / portTICK_PERIOD_MS);  // 10 ms delay to reduce CPU load
 
@@ -188,7 +199,7 @@ void FFTTask(void *parameter) {
 
 void setup() {
     Serial.begin(921600);
-    delay(1000);  // Wait for ESP32 boot messages
+    delay(1000);  
     while (!Serial) { delay(10); }
 
     // Initialize Queue and Task
@@ -207,210 +218,205 @@ void loop() {
     for (int i = 0; i < SAMPLES; i++) {
         unsigned long start_time = millis();
         while (!Serial.available()) {
-            if (millis() - start_time > 100000) { // Timeout after 10 seconds
+            if (millis() - start_time > 100000) { 
                 Serial.println("[ERROR] Serial timeout waiting for data.");
                 return;
             }
         }
 
         String input = Serial.readStringUntil('\n');
-        int separatorIndex = input.indexOf(','); // Assuming data is comma-separated
+        int separatorIndex = input.indexOf(','); 
         if (separatorIndex > 0) {
             dataBuffer[i] = input.substring(0, separatorIndex).toFloat();
             ppgBuffer[i] = input.substring(separatorIndex + 1).toFloat();
         }
         else{
-          i--; // Ignore Invalid Input
+          i--; 
         }
     }
 
     Serial.println("[INFO] Received Data, Sending to FFT Task...");
     xQueueOverwrite(ecgQueue, dataBuffer);
     xQueueOverwrite(ppgQueue, ppgBuffer);
-
-    
 }
 
-// Function to Find Peaks in a Signal
-void findPeaks(float x[], int size, int peaks[], int &peak_count, 
-               float height, float threshold, int distance, float prominence, 
-               float rel_height, float min_width, float widths[]) {
 
-    peak_count = 0;
-    int last_peak_index = -distance;
+float getStdDev(int arr[], int size){
+  float mean = 0.0, stdDev = 0.0;
 
-    for (int i = 1; i < size - 1; i++) {  // Check one point on each side
-        float current = x[i];
-        float prev = x[i - 1];
-        float next = x[i + 1];
+  // Compute mean
+  for (int i = 0; i < size; i++) {
+      mean += float(arr[i]);
+  }
+  mean /= size;
 
-        // Check if the current point is a peak
-        if (current > prev && current > next &&
-            current >= height && current >= threshold &&
-            ((current - prev) > prominence || (current - next) > prominence)) { 
+  // Compute standard deviation
+  for (int i = 0; i < size; i++) {
+    stdDev += (arr[i] - mean) * (arr[i] - mean);
+  }
+  stdDev = sqrt(stdDev / size);
 
-            if (i - last_peak_index >= distance) {  // Ensure minimum spacing
-                last_peak_index = i;
-                float peakHeight = current * rel_height;
-
-                // Find left and right width boundaries
-                int left = i, right = i;
-                while (left > 0 && x[left] > peakHeight * 0.9) left--;  // Allow small buffer
-                while (right < size - 1 && x[right] > peakHeight * 0.9) right++;
-
-                float width = right - left;
-                if (width >= min_width) {  // Store only if width meets minimum requirement
-                    peaks[peak_count] = i;
-                    widths[peak_count] = width;
-                    peak_count++;                  
-                }
-            }
-        }
-    }
+  return stdDev;
 }
 
-// Function to Find Valleys in a Signal
-void findValleys(float x[], int size, int valleys[], int &valley_count, float height, float threshold, int distance, float prominence, float rel_height, float min_width, float widths[]) {
-    valley_count = 0;
-    int last_valley_index = -distance;
+void findValleys_Noor(float x[], int size, int valleys[], int &valley_count, 
+                      float max_val, int distance, 
+                      float prominence, float width, float widths[]) {
 
-    float invertedMagnitude[size];
-    for (int i = 0; i < size; i++) {
-        invertedMagnitude[i] = -x[i];  // Invert the signal to treat valleys as peaks
+  valley_count=0;
+  int ctr=0;
+  for(int i=0; i<size; i++){
+    // Deal breakers
+    if(i==0){
+      continue;
+    }
+    if(i==size-1){
+      continue;
+    }
+    if(x[i]>max_val){
+      continue;
+    }
+    if(i>0 && x[i-1]<x[i]){
+      continue;
+    }
+    if(i<size-1 && x[i+1]<x[i]){
+      continue;
+    }
+    if(i>floor(width/2) && x[i-int(floor(width/2))]-x[i]<prominence){
+      continue;
+    }
+    if(i<size-1-floor(width/2) && x[i+int(floor(width/2))]-x[i]<prominence){
+      continue;
     }
 
-    for (int i = 2; i < size - 2; i++) {
-        float current = invertedMagnitude[i];
-        float prev1 = invertedMagnitude[i - 1], prev2 = invertedMagnitude[i - 2];
-        float next1 = invertedMagnitude[i + 1], next2 = invertedMagnitude[i + 2];
-
-        // Look for peaks in the inverted signal
-        if (current > prev1 && current > next1 && current > prev2 && current > next2 && 
-            current <= height && current <= threshold &&  
-            (current - prev1) > prominence && (current - next1) > prominence) {
-
-            float valleyHeight = current * rel_height;
-            int left = i, right = i;
-            while (left > 0 && invertedMagnitude[left] >= valleyHeight) left--;  
-            while (right < size - 1 && invertedMagnitude[right] >= valleyHeight) right++;  
-
-            float width = right - left;
-
-            if (width >= min_width) {
-                valleys[valley_count] = i;
-                widths[valley_count] = width;
-                valley_count++;
-            }
-        }
+    // Clustering neighboring valleys
+    if(valley_count>0 && i-valleys[valley_count-1]<distance){
+      int prevValleyWeight=ctr+1;
+      valleys[valley_count]=int(floor(((valleys[valley_count-1]*(prevValleyWeight))+i)/(prevValleyWeight+1)));
+      ctr++;
+      continue;
     }
+    else{
+      ctr=0;
+    }
+
+    // Put it in valleys
+    valleys[valley_count]=i;
+    valley_count++;
+  }
 }
 
-void find_Valleys_Time(float x[], int size, int valleys[], int &valley_count, 
-                 float height, float threshold, int distance, float prominence, 
-                 float rel_height, float min_width, float widths[]) {
-    valley_count = 0;
-    int last_valley_index = -distance;
+void findPeaks_Noor(float x[], int size, int peaks[], int &peak_count, 
+                      float min_val, int distance, 
+                      float prominence, float width, float widths[]) {
 
-    // Invert the signal for valley detection
-    float invertedMagnitude[size];
-    for (int i = 0; i < size; i++) {
-        invertedMagnitude[i] = -x[i];  // Invert the signal to treat valleys as peaks
+  peak_count=0;
+  int ctr=0;
+  for(int i=0; i<size; i++){
+    // Deal breakers
+    if(i==0){
+      continue;
+    }
+    if(i==size-1){
+      continue;
+    }
+    if(x[i]<min_val){
+      continue;
+    }
+    if(i>0 && x[i-1]>x[i]){
+      continue;
+    }
+    if(i<size-1 && x[i+1]>x[i]){
+      continue;
+    }
+    if(i>floor(width/2) && x[i]-x[i-int(floor(width/2))]<prominence){
+      continue;
+    }
+    if(i<size-1-floor(width/2) && x[i]-x[i+int(floor(width/2))]<prominence){
+      continue;
     }
 
-    for (int i = 2; i < size - 2; i++) {
-        float current = invertedMagnitude[i];
-        float prev1 = invertedMagnitude[i - 1], prev2 = invertedMagnitude[i - 2];
-        float next1 = invertedMagnitude[i + 1], next2 = invertedMagnitude[i + 2];
+    // // Clustering neighboring peaks
+    // if(peak_count>0 && i-valleys[peak_count-1]<distance){
+    //   int prevPeakWeight=ctr+1;
+    //   peaks[peak_count]=int(floor(((peaks[peak_count-1]*(prevPeakWeight))+i)/(prevPeakWeight+1)));
+    //   ctr++;
+    //   continue;
+    // }
+    // else{
+    //   ctr=0;
+    // }
 
-        // Look for peaks in the inverted signal (which are valleys in the original)
-        if (current > prev1 && current > next1 && current > prev2 && current > next2 &&
-            current >= height && current >= threshold &&  // Adjust height comparison
-            abs(current - prev1) > prominence && abs(current - next1) > prominence) {
-
-            // Calculate width at half the valley depth
-            float valleyHeight = current * rel_height;
-            int left = i, right = i;
-            while (left > 0 && invertedMagnitude[left] >= valleyHeight) left--;  
-            while (right < size - 1 && invertedMagnitude[right] >= valleyHeight) right++;  
-
-            float width = right - left;
-
-            if (width >= min_width) {
-                if (i - last_valley_index >= distance) {  // Ensure valley spacing
-                    valleys[valley_count] = i;
-                    widths[valley_count] = width;
-                    valley_count++;
-                    last_valley_index = i;
-                }
-            }
-        }
-    }
+    // Put it in peaks
+    peaks[peak_count]=i;
+    peak_count++;
+  }
 }
 
-// Function to Standardize a Signal (mean = 0; std = 1)
-void standardizeSignal(float signal[], int size) {
-    float mean = 0.0, stdDev = 0.0;
-
-    // Compute mean
-    for (int i = 0; i < size; i++) {
-        mean += signal[i];
+float calc_median_distance(float points[], int size) {
+    if (size < 2) {
+        return 0;
     }
-    mean /= size;
-
-    // Compute standard deviation
-    for (int i = 0; i < size; i++) {
-        stdDev += pow(signal[i] - mean, 2);
-    }
-    stdDev = sqrt(stdDev / size);
-
-    // Standardize signal
-    for (int i = 0; i < size; i++) {
-        signal[i] = (signal[i] - mean) / stdDev;
-    }
-}
-
-// Function to calculate the 25th percentile
-float calculatePercentile(float signal[], int size, float percentile) {
-    float sorted[size];
-    memcpy(sorted, signal, size * sizeof(float));  // Copy signal to sorted array
-
-    // Bubble sort to sort the signal in ascending order (for simplicity)
+    float distances[size - 1];
     for (int i = 0; i < size - 1; i++) {
-        for (int j = i + 1; j < size; j++) {
-            if (sorted[i] > sorted[j]) {
-                float temp = sorted[i];
-                sorted[i] = sorted[j];
-                sorted[j] = temp;
-            }
-        }
+        distances[i] = points[i + 1] - points[i];
     }
-
-    // Calculate index for the percentile
-    int index = (int)(percentile * size);
-    return sorted[index];
-}
-
-// Function to find valleys
-void findValleys_PPG(float ppg_segment[], int size, int valleys[], int &valley_count, float threshold) {
-    valley_count = 0;
-
-    // Iterate through the signal to detect valleys
-    for (int i = 1; i < size - 1; i++) {
-        // Check if the current value is lower than the neighbors (valley detection)
-        if (ppg_segment[i] < ppg_segment[i - 1] && ppg_segment[i] < ppg_segment[i + 1]) {
-            // Check if the valley is below the threshold, allowing for a wider range
-            if (ppg_segment[i] < threshold) {
-                valleys[valley_count] = i;  // Store the index of the valley
-                valley_count++;
-            }
-        }
-    }
-
-    // Post-process to merge valleys that are too close together (if desired)
-    // You can adjust the minimum distance (e.g., 5 samples) to avoid capturing the same valley multiple times
-    for (int i = 1; i < valley_count; i++) {
-        if (valleys[i] - valleys[i - 1] < 5) { // Merge valleys too close together
-            valleys[i] = valleys[i - 1];
-        }
+    if ((size - 1) % 2 == 0) { // if even
+        return (distances[(size - 1) / 2] + distances[((size - 1) / 2) + 1]) / 2.0;
+    } else {
+        return distances[(size - 1) / 2];
     }
 }
+
+int calc_std_distance(int points[], int size){
+  if(size<2){
+    return 0;
+  }
+  int distances[size-1];
+  for(int i=0; i<size-1; i++){
+    distances[i]=points[i+1]-points[i];
+  }
+  return getStdDev(distances, size-1);
+}
+
+float min(float arr[]){
+  float min_val = 1000;
+  for(int i=0; i<SAMPLES; i++){
+    if(arr[i]<min_val){
+      min_val=arr[i];
+    }
+  }
+  return min_val;
+}
+float max(float arr[]){
+  float max_val = -1000;
+  for(int i=0; i<SAMPLES; i++){
+    if(arr[i]>max_val){
+      max_val=arr[i];
+    }
+  }
+  return max_val;
+}
+void normalize(float arr[]){
+  float min_val=min(arr);
+  float max_val=max(arr);
+  if(min_val==max_val){
+    return;
+  }
+  for(int i=0; i<SAMPLES; i++){
+    arr[i]=(arr[i]-min_val)/(max_val-min_val);
+  }
+}
+
+float trapezoidal(float array[], int array_len){
+  float s = array[array_len - 1] + array[0];
+
+  for (int i = 1; i < array_len - 1; i++) {
+    s += 2 * array[i];
+  }
+
+  return s;
+}
+
+
+
