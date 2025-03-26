@@ -121,8 +121,8 @@ void FFTTask(void *parameter) {
             }
 
             // ECG Time Domain Features
-            findPeaks_Noor(vReal, SAMPLES, time_peaks, time_peak_count, 0.3, 1, 0, 3, time_peaks_widths);
-            findValleys_Noor(vReal, SAMPLES, time_valleys, time_valley_count, 0.3, 1, 0, 5, time_valley_widths);
+            findPeaks_Noor(vReal, SAMPLES, time_peaks, time_peak_count, 0.3, 30, 0, 3, time_peaks_widths);
+            findValleys_Noor(vReal, SAMPLES, time_valleys, time_valley_count, 0.3, 30, 0, 5, time_valley_widths);
             float time_valleys_float[time_valley_count];
             for (int i = 0; i < time_valley_count; i++) {
                 time_valleys_float[i] = float(time_valleys[i]);
@@ -336,7 +336,7 @@ void findPeaks_Noor(float x[], int size, int peaks[], int &peak_count,
       continue;
     }
 
-    /* // Clustering neighboring peaks
+     // Clustering neighboring peaks
     if(peak_count>0 && i-valleys[peak_count-1]<distance){
      int prevPeakWeight=ctr+1;
      peaks[peak_count]=int(floor(((peaks[peak_count-1]*(prevPeakWeight))+i)/(prevPeakWeight+1)));
@@ -345,7 +345,7 @@ void findPeaks_Noor(float x[], int size, int peaks[], int &peak_count,
     }
     else{
       ctr=0;
-    }*/
+    }
 
     // Put it in peaks
     peaks[peak_count]=i;

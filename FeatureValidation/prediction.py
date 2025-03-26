@@ -16,7 +16,7 @@ except Exception as e:
     exit()
 
 # Step 2: Read ECG and PPG Data from CSV
-input_csv = "mimic_perform_non_af_009_data.csv"
+input_csv = "data\mimic_perform_af_003_data.csv"
 print(f"Reading ECG and PPG data from {input_csv}...")
 ecg_data = []
 ppg_data = []
@@ -67,7 +67,20 @@ for i in range(0, len(ecg_data), SAMPLES):
         if line.startswith("Predicted Class:"):
             try:
                 predicted_class = float(line.split(":")[1].strip())
-                print(f"Predicted Class: {predicted_class:.6f}")
+                if(predicted_class==0):
+                    predicted_class_str="A_Fib"
+                elif(predicted_class==1):
+                    predicted_class_str="Bradycardia"
+                elif(predicted_class==2):
+                    predicted_class_str="Healthy"
+                elif(predicted_class==3):
+                    predicted_class_str="Tachycardia"
+                elif(predicted_class==4):
+                    predicted_class_str="Ventricular_Flutter_Fib"
+                else:
+                    predicted_class_str="Ventricular_Tachycardia"
+                print(f"Predicted Class: {predicted_class_str}")
                 break
-            except ValueError:
+            except ValueError as e:
+                print(e)
                 print(f"Warning: Could not parse predicted class line: {line}. Skipping this line.")
