@@ -79,7 +79,7 @@ void FFTTask(void *parameter) {
                 magnitude[i] = vReal[i];
             }
             findPeaks_Noor(magnitude, SAMPLES / 2, peaks, peak_count, 0.04, 30, 0.05, 5, peak_widths);
-            findValleys_Noor(magnitude, SAMPLES / 2, valleys, valley_count, 0.7, 0, 0.01, 2, valley_widths);
+            findValleys_Noor(magnitude, SAMPLES / 2, valleys, valley_count, 1.5, 0, 0.01, 2, valley_widths);
             if (peak_count > 0) {
               float peak_values[peak_count];
               for (int i = 0; i < peak_count; i++) {
@@ -133,7 +133,7 @@ void FFTTask(void *parameter) {
             int predicted_class = random_forest_predict(systolic_area, diff_median, ss_median, systolic_time, rr_std);
 
             
-            // // Print FFT Results
+            // Print FFT Results
             // for (int i = 0; i < SAMPLES / 2; i++) {  
             //     Serial.print(frequencies[i], 2);
             //     Serial.print(",");
@@ -172,20 +172,20 @@ void FFTTask(void *parameter) {
             //     Serial.println(ppgData_norm[ppg_peaks[i]], 6);
             // }
 
-            // Serial.print("Systolic Area: ");
-            // Serial.println(systolic_area, 6);
+            Serial.print("Systolic Area: ");
+            Serial.println(systolic_area, 6);
 
-            // Serial.print("Systolic Time: ");
-            // Serial.println(systolic_time, 6);
+            Serial.print("Systolic Time: ");
+            Serial.println(systolic_time, 6);
 
-            // Serial.print("ss_median: ");
-            // Serial.println(ss_median, 6);
+            Serial.print("ss_median: ");
+            Serial.println(ss_median, 6);
 
-            // Serial.print("rr_std: ");
-            // Serial.println(rr_std, 6);
+            Serial.print("rr_std: ");
+            Serial.println(rr_std, 6);
 
-            // Serial.print("Difference of Medians (Peak - Valley): ");
-            // Serial.println(diff_median, 6);
+            Serial.print("Difference of Medians (Peak - Valley): ");
+            Serial.println(diff_median, 6);
 
             Serial.print("Predicted Class:");
             Serial.println(predicted_class, 6);
