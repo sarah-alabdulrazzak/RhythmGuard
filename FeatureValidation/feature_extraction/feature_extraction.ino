@@ -198,7 +198,7 @@ void FFTTask(void *parameter) {
 }
 
 void setup() {
-    Serial.begin(921600);
+    Serial.begin(115200);
     delay(1000);  
     while (!Serial) { delay(10); }
 
@@ -336,16 +336,16 @@ void findPeaks_Noor(float x[], int size, int peaks[], int &peak_count,
       continue;
     }
 
-    // // Clustering neighboring peaks
-    // if(peak_count>0 && i-valleys[peak_count-1]<distance){
-    //   int prevPeakWeight=ctr+1;
-    //   peaks[peak_count]=int(floor(((peaks[peak_count-1]*(prevPeakWeight))+i)/(prevPeakWeight+1)));
-    //   ctr++;
-    //   continue;
-    // }
-    // else{
-    //   ctr=0;
-    // }
+    /* // Clustering neighboring peaks
+    if(peak_count>0 && i-valleys[peak_count-1]<distance){
+     int prevPeakWeight=ctr+1;
+     peaks[peak_count]=int(floor(((peaks[peak_count-1]*(prevPeakWeight))+i)/(prevPeakWeight+1)));
+     ctr++;
+     continue;
+    }
+    else{
+      ctr=0;
+    }*/
 
     // Put it in peaks
     peaks[peak_count]=i;
