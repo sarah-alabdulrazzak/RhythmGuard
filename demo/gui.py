@@ -108,7 +108,7 @@ def update_result_label(predicted_class):
 # Function to Embed ECG Plot in GUI
 def update_plot(ecg_chunk, ppg_chunk):
     ax1.clear()
-    ax1.plot(ecg_chunk, color='b', label="ECG Signal")
+    ax1.plot(ecg_chunk, color='#de528f', label="ECG Signal")
     ax1.set_xlabel("Time")
     ax1.set_ylabel("Amplitude")
     ax1.set_title("ECG Waveform")
@@ -116,7 +116,7 @@ def update_plot(ecg_chunk, ppg_chunk):
     ax1.grid()
 
     ax2.clear()
-    ax2.plot(ppg_chunk, color='b', label="PPG Signal")
+    ax2.plot(ppg_chunk, color='#de528f', label="PPG Signal")
     ax2.set_xlabel("Time")
     ax2.set_ylabel("Amplitude")
     ax2.set_title("PPG Waveform")
