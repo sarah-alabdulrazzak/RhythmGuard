@@ -106,6 +106,13 @@ void FFTTask(void *parameter) {
                 ppgData_norm[i] = ppgData[i];
             }
             normalize(ppgData_norm);
+
+            float ppgData_std[SAMPLES];
+            for (int i = 0; i < SAMPLES; i++) {
+                ppgData_std[i] = ppgData[i];
+            }
+            standardize(ppgData_std, SAMPLES);
+
             findPeaks_Noor(ppgData_norm, SAMPLES, ppg_peaks, ppg_peak_count, 0.3, 50, 0, 5, ppg_peaks_widths);
             float ppg_peaks_float[ppg_peak_count];
             for (int i = 0; i < ppg_peak_count; i++) {
@@ -115,7 +122,7 @@ void FFTTask(void *parameter) {
             if (peak_count > 1) {
                 float peak_values[peak_count];
                 for (int i = 0; i < peak_count; i++) {
-                    peak_values[i] = ppgData[peaks[i]];
+                    peak_values[i] = ppgData_std[peaks[i]];
                 }
                 systolic_area = trapezoidal(peak_values, peak_count);
             }
@@ -136,7 +143,7 @@ void FFTTask(void *parameter) {
             ss_median = float(calc_median_distance(time_valleys_float, time_valley_count));
             rr_std = float(calc_std_distance(time_peaks, time_peak_count));
 
-            int predicted_class = random_forest_predict(systolic_area, diff_median, ss_median, systolic_time, rr_std);
+            int predicted_class = random_forest_predict(diff_median, systolic_area, ss_median, rr_std);
 
             
             /*//Print FFT Results
@@ -301,11 +308,8 @@ float getMean(float arr[], int size){
 void standardize(float arr[], int size){
   float avg=getMean(arr,size);
   float std=getStdDev(arr, size);
-  if(std==0.0){
-    return;
-  }
   for(int i=0; i<size; i++){
-    arr[i]=(arr[i]-avg)/std;
+    arr[i]=(arr[i]-avg)/(std+1e-8);
   }
 }
 

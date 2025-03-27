@@ -4,6 +4,6 @@
 #include <vector> // Include necessary library
 using namespace std;
 
-int random_forest_predict(float systolic_area, float diff_median, float ss_median, float systolic_time, float rr_std);
+int random_forest_predict(float diff_median, float systolic_area, float ss_median, float rr_std);
 
 #endif

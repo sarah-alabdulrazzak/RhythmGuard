@@ -17,7 +17,7 @@ except Exception as e:
     exit()
 
 # Step 2: Read ECG and PPG Data from CSV
-input_csv = "data/v_tachy1.csv"
+input_csv = "data/mimic_perform_non_af_004_data.csv"
 print(f"Reading ECG and PPG data from {input_csv}...")
 ecg_data = []
 ppg_data = []
