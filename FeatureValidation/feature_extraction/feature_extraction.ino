@@ -120,9 +120,15 @@ void FFTTask(void *parameter) {
                 systolic_area = trapezoidal(peak_values, peak_count);
             }
 
+            float ecgData_std[SAMPLES];
+            for (int i = 0; i < SAMPLES; i++) {
+              ecgData_std[i] = ecgBuffer[i];
+
+            }
+            standardize(ecgData_std, SAMPLES); // if we don't want standardization, comment this out
             // ECG Time Domain Features
-            findPeaks_Noor(vReal, SAMPLES, time_peaks, time_peak_count, 0.3, 30, 0, 3, time_peaks_widths);
-            findValleys_Noor(vReal, SAMPLES, time_valleys, time_valley_count, 0.3, 30, 0, 5, time_valley_widths);
+            findPeaks_Noor(ecgData_std, SAMPLES, time_peaks, time_peak_count, 1.5, 30, 0, 20, time_peaks_widths);
+            findValleys_Noor(ecgData_std, SAMPLES, time_valleys, time_valley_count, -0.5, 30, 0, 20, time_valley_widths);
             float time_valleys_float[time_valley_count];
             for (int i = 0; i < time_valley_count; i++) {
                 time_valleys_float[i] = float(time_valleys[i]);
@@ -171,21 +177,44 @@ void FFTTask(void *parameter) {
             //     Serial.print(", Value: ");
             //     Serial.println(ppgData_norm[ppg_peaks[i]], 6);
             // }
+             // Print ECG signal for graphing
+            /*Serial.println("Printing ECG Signal:");
+            for (int i = 0; i < SAMPLES; i++) {
+                Serial.print(i); // Print the index (time)
+                Serial.print(",");
+                Serial.println(ecgData_std[i]);  // Print the normalized PPG signal value
+            }
 
-            Serial.print("Systolic Area: ");
-            Serial.println(systolic_area, 6);
+            // Print ECG Peaks
+            Serial.println("Printing Peaks:");
+            for (int i = 0; i < time_peak_count; i++) {
+                Serial.print(time_peaks[i]);
+                Serial.print(",");
+                Serial.println(ecgData_std[time_peaks[i]]);
+            }
 
-            Serial.print("Systolic Time: ");
-            Serial.println(systolic_time, 6);
+            // Print ECG Valleys
+            Serial.println("Printing Valleys:");
+            for (int i = 0; i < time_valley_count; i++) {
+                Serial.print(time_valleys[i]);
+                Serial.print(",");
+                Serial.println(ecgData_std[time_valleys[i]]);
+            }*/
 
-            Serial.print("ss_median: ");
-            Serial.println(ss_median, 6);
+            // Serial.print("Systolic Area: ");
+            // Serial.println(systolic_area, 6);
 
-            Serial.print("rr_std: ");
-            Serial.println(rr_std, 6);
+            // Serial.print("Systolic Time: ");
+            // Serial.println(systolic_time, 6);
 
-            Serial.print("Difference of Medians (Peak - Valley): ");
-            Serial.println(diff_median, 6);
+            // Serial.print("ss_median: ");
+            // Serial.println(ss_median, 6);
+
+            // Serial.print("rr_std: ");
+            // Serial.println(rr_std, 6);
+
+            // Serial.print("Difference of Medians (Peak - Valley): ");
+            // Serial.println(diff_median, 6);
 
             Serial.print("Predicted Class:");
             Serial.println(predicted_class, 6);
@@ -241,7 +270,7 @@ void loop() {
 }
 
 
-float getStdDev(int arr[], int size){
+float getStdDev(float arr[], int size){
   float mean = 0.0, stdDev = 0.0;
 
   // Compute mean
@@ -257,6 +286,25 @@ float getStdDev(int arr[], int size){
   stdDev = sqrt(stdDev / size);
 
   return stdDev;
+}
+
+float getMean(float arr[], int size){
+  float result=0;
+  for(int i=0; i<size; i++){
+    result+=float(arr[i]);
+  }
+  return result/size;
+}
+
+void standardize(float arr[], int size){
+  float avg=getMean(arr,size);
+  float std=getStdDev(arr, size);
+  if(std==0.0){
+    return;
+  }
+  for(int i=0; i<size; i++){
+    arr[i]=(arr[i]-avg)/std;
+  }
 }
 
 void findValleys_Noor(float x[], int size, int valleys[], int &valley_count, 
@@ -282,11 +330,22 @@ void findValleys_Noor(float x[], int size, int valleys[], int &valley_count,
     if(i<size-1 && x[i+1]<x[i]){
       continue;
     }
-    if(i>floor(width/2) && x[i-int(floor(width/2))]-x[i]<prominence){
+    /*if(i>floor(width/2) && x[i-int(floor(width/2))]-x[i]<prominence){
       continue;
     }
     if(i<size-1-floor(width/2) && x[i+int(floor(width/2))]-x[i]<prominence){
       continue;
+    }*/
+    if(i>floor(width/2) && i<size-1-floor(width/2)){
+      float local_min=0;
+      for(int j=i-floor(width/2); j<i+floor(width/2)+1; j++){
+        if(x[j]<local_min){
+          local_min=x[j];
+        }
+      }
+      if(x[i]!=local_min){
+        continue;
+      }
     }
 
     // Clustering neighboring valleys
@@ -329,15 +388,27 @@ void findPeaks_Noor(float x[], int size, int peaks[], int &peak_count,
     if(i<size-1 && x[i+1]>x[i]){
       continue;
     }
-    if(i>floor(width/2) && x[i]-x[i-int(floor(width/2))]<prominence){
+    /*if(i>floor(width/2) && x[i]-x[i-int(floor(width/2))]<prominence){
       continue;
     }
     if(i<size-1-floor(width/2) && x[i]-x[i+int(floor(width/2))]<prominence){
       continue;
+    }*/
+
+    if(i>floor(width/2) && i<size-1-floor(width/2)){
+      float local_max=0;
+      for(int j=i-floor(width/2); j<i+floor(width/2)+1; j++){
+        if(x[j]>local_max){
+          local_max=x[j];
+        }
+      }
+      if(x[i]!=local_max){
+        continue;
+      }
     }
 
      // Clustering neighboring peaks
-    if(peak_count>0 && i-valleys[peak_count-1]<distance){
+    if(peak_count>0 && i-peaks[peak_count-1]<distance){
      int prevPeakWeight=ctr+1;
      peaks[peak_count]=int(floor(((peaks[peak_count-1]*(prevPeakWeight))+i)/(prevPeakWeight+1)));
      ctr++;
@@ -372,9 +443,9 @@ int calc_std_distance(int points[], int size){
   if(size<2){
     return 0;
   }
-  int distances[size-1];
+  float distances[size-1];
   for(int i=0; i<size-1; i++){
-    distances[i]=points[i+1]-points[i];
+    distances[i]=float(points[i+1]-points[i]);
   }
   return getStdDev(distances, size-1);
 }

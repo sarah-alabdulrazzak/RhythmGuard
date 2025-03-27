@@ -3,10 +3,11 @@ import csv
 import time
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 
 # Step 1: Configure Serial Communication
-esp32_port = "/dev/tty.usbserial-1420"  # Change this to your ESP32's port
-baud_rate = 921600
+esp32_port = "COM3"  # Change this to your ESP32's port
+baud_rate = 115200
 SAMPLES = 1024  # Must match ESP32 SAMPLES
 fs = 125  # Sampling frequency in Hz
 timeout = 2  # Timeout for serial communication in seconds
@@ -19,12 +20,12 @@ except Exception as e:
     exit()
 
 # Step 2: Read ECG and PPG Data from CSV
-input_csv = "/Users/sarahalabdulrazzak/Desktop/Capstone/myenv/Data/mimic_perform_non_af_csv/mimic_perform_non_af_009_data.csv"
+input_csv = "data/tachy1.csv"
 print(f"Reading ECG and PPG data from {input_csv}...")
 ecg_data = []
 ppg_data = []
 
-try:
+'''try:
     with open(input_csv, "r") as file:
         reader = csv.reader(file)
         next(reader)  # Skip the header row
@@ -36,7 +37,10 @@ try:
                 print(f"Warning: Could not convert data to float. Skipping this row.")
 except FileNotFoundError:
     print(f"Error: The file {input_csv} was not found.")
-    exit()
+    exit()'''
+df=pd.read_csv(input_csv)
+ecg_data=df["ECG"].values
+ppg_data=df["PPG"].values
 
 print(f"Total ECG data points: {len(ecg_data)}")
 print(f"Total PPG data points: {len(ppg_data)}")
@@ -83,20 +87,20 @@ for i in range(0, len(ecg_data), SAMPLES):
     while True:
         line = ser.readline().decode('utf-8', errors='ignore').strip()
 
-        if line == "Printing Peaks":
+        if line == "Printing Peaks:":
             break
         if line:  # Only process lines with a comma (i.e., frequency,magnitude)
             try:
                 frequency, magnitude = map(float, line.split(","))
                 fft_chunk.append((frequency, magnitude))
             except ValueError:
-                print(f"Warning: Could not parse FFT result line: {line}. Skipping this line.")
+                print(f"1. Warning: Could not parse FFT result line: {line}. Skipping this line.")
 
     # Receive Peaks Data
     while True:
         line = ser.readline().decode('utf-8', errors='ignore').strip()
 
-        if line == "Printing Valleys":
+        if line == "Printing Valleys:":
             break
         if line:  # Only process lines with a comma (i.e., frequency,magnitude)
             try:
@@ -104,7 +108,7 @@ for i in range(0, len(ecg_data), SAMPLES):
                 peaks_x.append(frequency)
                 peaks_y.append(magnitude)
             except ValueError:
-                print(f"Warning: Could not parse peak result line: {line}. Skipping this line.")
+                print(f"2. Warning: Could not parse peak result line: {line}. Skipping this line.")
 
     # Receive Valleys Data
     while True:
@@ -118,7 +122,7 @@ for i in range(0, len(ecg_data), SAMPLES):
                 valleys_x.append(frequency)
                 valleys_y.append(magnitude)
             except ValueError:
-                print(f"Warning: Could not parse valley result line: {line}. Skipping this line.")
+                print(f"3. Warning: Could not parse valley result line: {line}. Skipping this line.")
 
     # Extract FFT frequencies and magnitudes
     x = [freq for freq, _ in fft_chunk]
@@ -131,15 +135,17 @@ for i in range(0, len(ecg_data), SAMPLES):
     # Plot Peaks (if available)
     if peaks_x:
         plt.scatter(peaks_x, peaks_y, color='r', label=f"Peaks ({len(peaks_x)})")
+        print(peaks_x)
 
     # Plot Valleys (if available)
     if valleys_x:
         plt.scatter(valleys_x, valleys_y, color='g', label=f"Valleys ({len(valleys_x)})")
+        print(valleys_x)
 
     plt.xlabel("Frequency (Hz)")
     plt.ylabel("Magnitude")
     plt.title("FFT with Peaks and Valleys")
-    plt.xlim(0,20)
+    #plt.xlim(0,20)
     plt.legend()
     plt.pause(0.1)  # Pause to update the plot
 

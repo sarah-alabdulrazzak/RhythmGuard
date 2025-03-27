@@ -1,6 +1,7 @@
 import serial
 import csv
 import time
+import pandas as pd
 
 # Step 1: Configure Serial Communication
 esp32_port = "COM3"  # Change this to your ESP32's port
@@ -16,12 +17,12 @@ except Exception as e:
     exit()
 
 # Step 2: Read ECG and PPG Data from CSV
-input_csv = "data\mimic_perform_af_003_data.csv"
+input_csv = "data/tachy2.csv"
 print(f"Reading ECG and PPG data from {input_csv}...")
 ecg_data = []
 ppg_data = []
 
-try:
+'''try:
     with open(input_csv, "r") as file:
         reader = csv.reader(file)
         next(reader)  # Skip the header row
@@ -33,7 +34,10 @@ try:
                 print(f"Warning: Could not convert data to float. Skipping this row.")
 except FileNotFoundError:
     print(f"Error: The file {input_csv} was not found.")
-    exit()
+    exit()'''
+df=pd.read_csv(input_csv)
+ecg_data=df["ECG"].values
+ppg_data=df["PPG"].values
 
 print(f"Total ECG data points: {len(ecg_data)}")
 print(f"Total PPG data points: {len(ppg_data)}")
