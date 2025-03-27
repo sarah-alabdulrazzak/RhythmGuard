@@ -20,7 +20,7 @@ except Exception as e:
     exit()
 
 # Step 2: Read ECG and PPG Data from CSV
-input_csv = "data\mimic_perform_non_af_003_data.csv"
+input_csv = "data\mimic_perform_af_003_data.csv"
 print(f"Reading ECG and PPG data from {input_csv}...")
 ecg_data = []
 ppg_data = []
@@ -146,7 +146,7 @@ for i in range(0, len(ecg_data), SAMPLES):
     plt.ylabel("Magnitude")
     plt.title("FFT with Peaks and Valleys")
     #plt.xlim(0,20)
-    plt.ylim(0, 50)
+    #plt.ylim(0, 50)
     plt.legend()
     plt.pause(0.1)  # Pause to update the plot
 

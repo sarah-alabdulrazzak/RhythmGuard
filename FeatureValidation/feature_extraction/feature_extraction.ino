@@ -115,7 +115,7 @@ void FFTTask(void *parameter) {
             if (peak_count > 1) {
                 float peak_values[peak_count];
                 for (int i = 0; i < peak_count; i++) {
-                    peak_values[i] = ppgData_norm[peaks[i]];
+                    peak_values[i] = ppgData[peaks[i]];
                 }
                 systolic_area = trapezoidal(peak_values, peak_count);
             }
@@ -139,7 +139,7 @@ void FFTTask(void *parameter) {
             int predicted_class = random_forest_predict(systolic_area, diff_median, ss_median, systolic_time, rr_std);
 
             
-            //Print FFT Results
+            /*//Print FFT Results
             for (int i = 0; i < SAMPLES / 2; i++) {  
                 Serial.print(frequencies[i], 2);
                 Serial.print(",");
@@ -160,23 +160,25 @@ void FFTTask(void *parameter) {
                 Serial.print(",");
                 Serial.println(magnitude[valleys[i]], 6);
             }
+            */
+             // Print PPG signal for graphing
+            //Serial.println("Printing PPG Signal:");
+            /*for (int i = 0; i < SAMPLES; i++) {
+                Serial.print(i); // Print the index (time)
+                Serial.print(",");
+                Serial.println(ppgData_norm[i], 6);  // Print the normalized PPG signal value
+            }
 
-            //  // Print PPG signal for graphing
-            // Serial.println("Printing PPG Signal:");
-            // for (int i = 0; i < SAMPLES; i++) {
-            //     Serial.print(i); // Print the index (time)
-            //     Serial.print(",");
-            //     Serial.println(ppgData_norm[i], 6);  // Print the normalized PPG signal value
-            // }
+            // Print PPG Peaks
+            Serial.println("Printing Peaks:");
+            for (int i = 0; i < ppg_peak_count; i++) {
+                Serial.print(ppg_peaks[i]);
+                Serial.print(",");
+                Serial.println(ppgData_norm[ppg_peaks[i]], 6);
+            }
 
-            // // Print PPG Peaks
-            // Serial.println("Printing PPG Peaks:");
-            // for (int i = 0; i < ppg_peak_count; i++) {
-            //     Serial.print("Peak at index: ");
-            //     Serial.print(ppg_peaks[i]);
-            //     Serial.print(", Value: ");
-            //     Serial.println(ppgData_norm[ppg_peaks[i]], 6);
-            // }
+            Serial.println("Printing Valleys:");*/
+
              // Print ECG signal for graphing
             /*Serial.println("Printing ECG Signal:");
             for (int i = 0; i < SAMPLES; i++) {
@@ -201,23 +203,23 @@ void FFTTask(void *parameter) {
                 Serial.println(ecgData_std[time_valleys[i]]);
             }*/
 
-            // Serial.print("Systolic Area: ");
-            // Serial.println(systolic_area, 6);
+            Serial.print("Systolic Area: ");
+            Serial.println(systolic_area, 6);
 
-            // Serial.print("Systolic Time: ");
-            // Serial.println(systolic_time, 6);
+            Serial.print("Systolic Time: ");
+            Serial.println(systolic_time, 6);
 
-            // Serial.print("ss_median: ");
-            // Serial.println(ss_median, 6);
+            Serial.print("ss_median: ");
+            Serial.println(ss_median, 6);
 
-            // Serial.print("rr_std: ");
-            // Serial.println(rr_std, 6);
+            Serial.print("rr_std: ");
+            Serial.println(rr_std, 6);
 
-            // Serial.print("Difference of Medians (Peak - Valley): ");
-            // Serial.println(diff_median, 6);
+            Serial.print("Difference of Medians (Peak - Valley): ");
+            Serial.println(diff_median, 6);
 
-            //Serial.print("Predicted Class:");
-            //Serial.println(predicted_class, 6);
+            Serial.print("Predicted Class:");
+            Serial.println(predicted_class, 6);
 
             vTaskDelay(10 / portTICK_PERIOD_MS);  // 10 ms delay to reduce CPU load
 
@@ -446,7 +448,7 @@ float calc_median_distance(float points[], int size) {
     }
 }
 
-int calc_std_distance(int points[], int size){
+float calc_std_distance(int points[], int size){
   if(size<2){
     return 0;
   }

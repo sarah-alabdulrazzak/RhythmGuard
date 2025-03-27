@@ -17,7 +17,7 @@ except Exception as e:
     exit()
 
 # Step 2: Read ECG and PPG Data from CSV
-input_csv = "data/v_tachy3.csv"
+input_csv = "data/v_tachy1.csv"
 print(f"Reading ECG and PPG data from {input_csv}...")
 ecg_data = []
 ppg_data = []
@@ -52,7 +52,7 @@ for i in range(0, len(ecg_data), SAMPLES):
     if len(chunk_ecg) < SAMPLES or len(chunk_ppg) < SAMPLES:
         print(f"Warning: Remaining data chunk has less than {SAMPLES} samples, skipping.")
         break
-    
+    print("----------")
     print(f"Sending chunk {i//SAMPLES + 1} of ECG and PPG data to ESP32...")
 
     # Send ECG and PPG data to ESP32
@@ -88,3 +88,10 @@ for i in range(0, len(ecg_data), SAMPLES):
             except ValueError as e:
                 print(e)
                 print(f"Warning: Could not parse predicted class line: {line}. Skipping this line.")
+        else:
+            if(line.startswith('[')):
+                pass
+            elif(line=="End"):
+                print("----------")
+            else:
+                print(line)
