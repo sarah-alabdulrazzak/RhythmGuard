@@ -40,12 +40,12 @@ float time_peaks_widths[SAMPLES / 2];
 int time_valleys[SAMPLES / 2], time_valley_count = 0;
 float time_valley_widths[SAMPLES / 2];
 float rr_std=0;
-float ss_median=0;
+float rr_median=0;
 
-int ppg_peaks[SAMPLES], ppg_peak_count = 0;
-float ppg_peaks_widths[SAMPLES];
+int ppg_valleys[SAMPLES], ppg_valley_count = 0;
+float ppg_valleys_widths[SAMPLES];
 float ppg_threshold=0; 
-float systolic_time=0;
+float diastolic_time=0;
 float systolic_area = 0;
 
 //Task and Queue Handles
@@ -61,9 +61,8 @@ void FFTTask(void *parameter) {
 
             Serial.println("[INFO] Processing FFT...");
 
-            // PPG Features
-            float ppgData_norm[SAMPLES];
-            float ppgData_std[SAMPLES];
+            // float ppgData_norm[SAMPLES];
+            
             float ecgData_std[SAMPLES];
 
             // Prepare Input
@@ -71,15 +70,12 @@ void FFTTask(void *parameter) {
                 vReal[i] = ecgBuffer[i];
                 ecgData_std[i] = ecgBuffer[i];
                 vImag[i] = 0;
-                ppgData[i] = ppgBuffer[i];
-                ppgData_norm[i] = ppgData[i];
-                ppgData_std[i] = ppgData[i];
+                // ppgData_norm[i] = ppgData[i];
             }
 
             standardize(ecgData_std, SAMPLES); // if we don't want standardization, comment this out
             standardize(vReal, SAMPLES); // if we don't want standardization, comment this out
-            normalize(ppgData_norm);
-            standardize(ppgData_std, SAMPLES);
+            // normalize(ppgData_norm);
 
             // Perform FFT
             FFT.windowing(vReal, SAMPLES, FFT_WIN_TYP_HAMMING, FFT_FORWARD);
@@ -113,12 +109,22 @@ void FFTTask(void *parameter) {
             // Difference between median of FFT peaks and valleys
             diff_median = abs(peak_median - valley_median);
 
-            findPeaks_Noor(ppgData_norm, SAMPLES, ppg_peaks, ppg_peak_count, 0.3, 50, 0, 5, ppg_peaks_widths);
-            float ppg_peaks_float[ppg_peak_count];
-            for (int i = 0; i < ppg_peak_count; i++) {
-                ppg_peaks_float[i] = float(ppg_peaks[i]);
+            float ppgData_std[SAMPLES];
+            // Prepare Input
+            for (int i = 0; i < SAMPLES; i++) {
+                ppgData[i] = ppgBuffer[i];
+                // ppgData_norm[i] = ppgData[i];
+                ppgData_std[i] = ppgData[i];
             }
-            systolic_time = float(calc_median_distance(ppg_peaks_float, ppg_peak_count)) / SAMPLING_FREQUENCY;
+
+            standardize(ppgData_std, SAMPLES);
+
+            findPeaks_Noor(ppgData_std, SAMPLES, ppg_valleys, ppg_valley_count, 0.3, 50, 0, 5, ppg_valleys_widths);
+            float ppg_valleys_float[ppg_valley_count];
+            for (int i = 0; i < ppg_valley_count; i++) {
+                ppg_valleys_float[i] = float(ppg_valleys[i]);
+            }
+            diastolic_time = float(calc_median_distance(ppg_valleys_float, ppg_valley_count)) / SAMPLING_FREQUENCY;
             if (peak_count > 1) {
                 float peak_values[peak_count];
                 for (int i = 0; i < peak_count; i++) {
@@ -134,34 +140,34 @@ void FFTTask(void *parameter) {
             for (int i = 0; i < time_valley_count; i++) {
                 time_valleys_float[i] = float(time_valleys[i]);
             }
-            ss_median = float(calc_median_distance(time_valleys_float, time_valley_count));
+            rr_median = float(calc_median_distance(time_valleys_float, time_peak_count));
             rr_std = float(calc_std_distance(time_peaks, time_peak_count));
 
-            int predicted_class = random_forest_predict(diff_median, systolic_area, ss_median, rr_std);
+            int predicted_class = random_forest_predict(diastolic_time, rr_std, time_peak_count, rr_median, time_valley_count);
 
             
-            /*//Print FFT Results
-            for (int i = 0; i < SAMPLES / 2; i++) {  
-                Serial.print(frequencies[i], 2);
-                Serial.print(",");
-                Serial.println(magnitude[i], 6);
-            }
+            //Print FFT Results
+            // for (int i = 0; i < SAMPLES / 2; i++) {  
+            //     Serial.print(frequencies[i], 2);
+            //     Serial.print(",");
+            //     Serial.println(magnitude[i], 6);
+            // }
 
-            Serial.println("Printing Peaks:");
-            for (int i = 0; i < peak_count; i++) {
-                Serial.print(frequencies[peaks[i]], 2);
-                Serial.print(",");
-                Serial.println(magnitude[peaks[i]], 6);
-            }
+            // Serial.println("Printing Peaks:");
+            // for (int i = 0; i < peak_count; i++) {
+            //     Serial.print(frequencies[peaks[i]], 2);
+            //     Serial.print(",");
+            //     Serial.println(magnitude[peaks[i]], 6);
+            // }
 
-             // Store and print valley results
-            Serial.println("Printing Valleys:");
-            for (int i = 0; i < valley_count; i++) {
-                Serial.print(frequencies[valleys[i]], 2);
-                Serial.print(",");
-                Serial.println(magnitude[valleys[i]], 6);
-            }
-            */
+            //  // Store and print valley results
+            // Serial.println("Printing Valleys:");
+            // for (int i = 0; i < valley_count; i++) {
+            //     Serial.print(frequencies[valleys[i]], 2);
+            //     Serial.print(",");
+            //     Serial.println(magnitude[valleys[i]], 6);
+            // }
+            
              // Print PPG signal for graphing
             //Serial.println("Printing PPG Signal:");
             /*for (int i = 0; i < SAMPLES; i++) {
@@ -204,20 +210,20 @@ void FFTTask(void *parameter) {
                 Serial.println(ecgData_std[time_valleys[i]]);
             }*/
 
-            Serial.print("Systolic Area: ");
-            Serial.println(systolic_area, 6);
+            // Serial.print("Systolic Area: ");
+            // Serial.println(systolic_area, 6);
 
-            Serial.print("Systolic Time: ");
-            Serial.println(systolic_time, 6);
+            // Serial.print("Systolic Time: ");
+            // Serial.println(systolic_time, 6);
 
-            Serial.print("ss_median: ");
-            Serial.println(ss_median, 6);
+            // Serial.print("ss_median: ");
+            // Serial.println(ss_median, 6);
 
-            Serial.print("rr_std: ");
-            Serial.println(rr_std, 6);
+            // Serial.print("rr_std: ");
+            // Serial.println(rr_std, 6);
 
-            Serial.print("Difference of Medians (Peak - Valley): ");
-            Serial.println(diff_median, 6);
+            // Serial.print("Difference of Medians (Peak - Valley): ");
+            // Serial.println(diff_median, 6);
 
             Serial.print("Predicted Class:");
             Serial.println(predicted_class, 6);
