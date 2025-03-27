@@ -78,8 +78,8 @@ void FFTTask(void *parameter) {
                 frequencies[i] = i * frequency_step;
                 magnitude[i] = vReal[i];
             }
-            findPeaks_Noor(magnitude, SAMPLES / 2, peaks, peak_count, 0.04, 30, 0.05, 5, peak_widths);
-            findValleys_Noor(magnitude, SAMPLES / 2, valleys, valley_count, 1.5, 0, 0.01, 2, valley_widths);
+            findPeaks_Noor(magnitude, SAMPLES / 2, peaks, peak_count, 1, 10, 0, 10, peak_widths);
+            findValleys_Noor(magnitude, SAMPLES / 2, valleys, valley_count, 2, 10, 0, 0, valley_widths);
             if (peak_count > 0) {
               float peak_values[peak_count];
               for (int i = 0; i < peak_count; i++) {
@@ -139,27 +139,27 @@ void FFTTask(void *parameter) {
             int predicted_class = random_forest_predict(systolic_area, diff_median, ss_median, systolic_time, rr_std);
 
             
-            // Print FFT Results
-            // for (int i = 0; i < SAMPLES / 2; i++) {  
-            //     Serial.print(frequencies[i], 2);
-            //     Serial.print(",");
-            //     Serial.println(magnitude[i], 6);
-            // }
+            //Print FFT Results
+            for (int i = 0; i < SAMPLES / 2; i++) {  
+                Serial.print(frequencies[i], 2);
+                Serial.print(",");
+                Serial.println(magnitude[i], 6);
+            }
 
-            // Serial.println("Printing Peaks");
-            // for (int i = 0; i < peak_count; i++) {
-            //     Serial.print(frequencies[peaks[i]], 2);
-            //     Serial.print(",");
-            //     Serial.println(magnitude[peaks[i]], 6);
-            // }
+            Serial.println("Printing Peaks:");
+            for (int i = 0; i < peak_count; i++) {
+                Serial.print(frequencies[peaks[i]], 2);
+                Serial.print(",");
+                Serial.println(magnitude[peaks[i]], 6);
+            }
 
-            //  // Store and print valley results
-            // Serial.println("Printing Valleys");
-            // for (int i = 0; i < valley_count; i++) {
-            //     Serial.print(frequencies[valleys[i]], 2);
-            //     Serial.print(",");
-            //     Serial.println(magnitude[valleys[i]], 6);
-            // }
+             // Store and print valley results
+            Serial.println("Printing Valleys:");
+            for (int i = 0; i < valley_count; i++) {
+                Serial.print(frequencies[valleys[i]], 2);
+                Serial.print(",");
+                Serial.println(magnitude[valleys[i]], 6);
+            }
 
             //  // Print PPG signal for graphing
             // Serial.println("Printing PPG Signal:");
@@ -216,8 +216,8 @@ void FFTTask(void *parameter) {
             // Serial.print("Difference of Medians (Peak - Valley): ");
             // Serial.println(diff_median, 6);
 
-            Serial.print("Predicted Class:");
-            Serial.println(predicted_class, 6);
+            //Serial.print("Predicted Class:");
+            //Serial.println(predicted_class, 6);
 
             vTaskDelay(10 / portTICK_PERIOD_MS);  // 10 ms delay to reduce CPU load
 
@@ -336,27 +336,31 @@ void findValleys_Noor(float x[], int size, int valleys[], int &valley_count,
     if(i<size-1-floor(width/2) && x[i+int(floor(width/2))]-x[i]<prominence){
       continue;
     }*/
-    if(i>floor(width/2) && i<size-1-floor(width/2)){
-      float local_min=0;
-      for(int j=i-floor(width/2); j<i+floor(width/2)+1; j++){
-        if(x[j]<local_min){
-          local_min=x[j];
+    if(width>0){
+      if(i>floor(width/2) && i<size-1-floor(width/2)){
+        float local_min=0;
+        for(int j=i-floor(width/2); j<i+floor(width/2)+1; j++){
+          if(x[j]<local_min){
+            local_min=x[j];
+          }
         }
-      }
-      if(x[i]!=local_min){
-        continue;
+        if(x[i]!=local_min){
+          continue;
+        }
       }
     }
 
     // Clustering neighboring valleys
-    if(valley_count>0 && i-valleys[valley_count-1]<distance){
-      int prevValleyWeight=ctr+1;
-      valleys[valley_count]=int(floor(((valleys[valley_count-1]*(prevValleyWeight))+i)/(prevValleyWeight+1)));
-      ctr++;
-      continue;
-    }
-    else{
-      ctr=0;
+    if(distance>0){
+      if(valley_count>0 && i-valleys[valley_count-1]<distance){
+        int prevValleyWeight=ctr+1;
+        valleys[valley_count]=int(floor(((valleys[valley_count-1]*(prevValleyWeight))+i)/(prevValleyWeight+1)));
+        ctr++;
+        continue;
+      }
+      else{
+        ctr=0;
+      }
     }
 
     // Put it in valleys
@@ -394,28 +398,31 @@ void findPeaks_Noor(float x[], int size, int peaks[], int &peak_count,
     if(i<size-1-floor(width/2) && x[i]-x[i+int(floor(width/2))]<prominence){
       continue;
     }*/
-
-    if(i>floor(width/2) && i<size-1-floor(width/2)){
-      float local_max=0;
-      for(int j=i-floor(width/2); j<i+floor(width/2)+1; j++){
-        if(x[j]>local_max){
-          local_max=x[j];
+    if(width>0){
+      if(i>floor(width/2) && i<size-1-floor(width/2)){
+        float local_max=0;
+        for(int j=i-floor(width/2); j<i+floor(width/2)+1; j++){
+          if(x[j]>local_max){
+            local_max=x[j];
+          }
         }
-      }
-      if(x[i]!=local_max){
-        continue;
+        if(x[i]!=local_max){
+          continue;
+        }
       }
     }
 
      // Clustering neighboring peaks
-    if(peak_count>0 && i-peaks[peak_count-1]<distance){
-     int prevPeakWeight=ctr+1;
-     peaks[peak_count]=int(floor(((peaks[peak_count-1]*(prevPeakWeight))+i)/(prevPeakWeight+1)));
-     ctr++;
-     continue;
-    }
-    else{
-      ctr=0;
+    if(distance>0){
+      if(peak_count>0 && i-peaks[peak_count-1]<distance){
+      int prevPeakWeight=ctr+1;
+      peaks[peak_count]=int(floor(((peaks[peak_count-1]*(prevPeakWeight))+i)/(prevPeakWeight+1)));
+      ctr++;
+      continue;
+      }
+      else{
+        ctr=0;
+      }
     }
 
     // Put it in peaks
