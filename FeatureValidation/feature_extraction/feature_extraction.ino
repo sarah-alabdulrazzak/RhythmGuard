@@ -2,9 +2,16 @@
 #include <stdlib.h>
 #include "Arduino.h"
 #include "random_forest.h"
+#include <LiquidCrystal_I2C.h>
 
 #define SAMPLES 1024          
 #define SAMPLING_FREQUENCY 125 
+
+// LCD
+int lcdColumns = 16;
+int lcdRows = 2;
+
+LiquidCrystal_I2C lcd(0x27, lcdColumns, lcdRows);
 
 // FFT Object
 ArduinoFFT<float> FFT;  
@@ -134,7 +141,7 @@ void FFTTask(void *parameter) {
             }
 
             // ECG Time Domain Features
-            findPeaks_Noor(ecgData_std, SAMPLES, time_peaks, time_peak_count, 1.5, 30, 0, 20, time_peaks_widths);
+            findPeaks_Noor(ecgData_std, SAMPLES, time_peaks, time_peak_count, 3, 30, 0, 20, time_peaks_widths);
             findValleys_Noor(ecgData_std, SAMPLES, time_valleys, time_valley_count, -0.5, 30, 0, 20, time_valley_widths);
             float time_valleys_float[time_valley_count];
             for (int i = 0; i < time_valley_count; i++) {
@@ -227,6 +234,11 @@ void FFTTask(void *parameter) {
 
             Serial.print("Predicted Class:");
             Serial.println(predicted_class, 6);
+            lcd.clear(); // Clear the display
+            lcd.setCursor(0, 0); // Set the cursor to the first column, first row
+            lcd.print(getClass(predicted_class)); // Print message on the first row
+
+
 
             vTaskDelay(10 / portTICK_PERIOD_MS);  // 10 ms delay to reduce CPU load
 
@@ -245,6 +257,9 @@ void setup() {
     ppgQueue = xQueueCreate(1, sizeof(float) * SAMPLES);
 
     xTaskCreatePinnedToCore(FFTTask, "FFTTask", 16384, NULL, 1, &FFTTaskHandle, 1);
+
+    lcd.init(); // Initialize the LCD
+    lcd.backlight(); // Turn on the LCD backlight
 
     Serial.println("[INFO] ESP32 Ready!");
 }
@@ -500,6 +515,30 @@ float trapezoidal(float array[], int array_len){
   }
 
   return s;
+}
+
+char* getClass(int classNum){
+  if(classNum==0){
+    return "A_Fib";
+  }
+  else if(classNum==1){
+    return "Bradycardia";
+  }
+  else if(classNum==2){
+    return "Healthy";
+  }
+  else if(classNum==3){
+    return "Tachycardia";
+  }
+  else if(classNum==4){
+    return "Ventricular_Flutter_Fib";
+  }
+  else if(classNum==5){
+    return "Ventricular_Tachycardia";
+  }
+  else{
+    return "Unknown";
+  }
 }
 
 
