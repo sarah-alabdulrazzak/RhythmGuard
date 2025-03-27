@@ -61,12 +61,25 @@ void FFTTask(void *parameter) {
 
             Serial.println("[INFO] Processing FFT...");
 
+            // PPG Features
+            float ppgData_norm[SAMPLES];
+            float ppgData_std[SAMPLES];
+            float ecgData_std[SAMPLES];
+
             // Prepare Input
             for (int i = 0; i < SAMPLES; i++) {
                 vReal[i] = ecgBuffer[i];
+                ecgData_std[i] = ecgBuffer[i];
                 vImag[i] = 0;
                 ppgData[i] = ppgBuffer[i];
+                ppgData_norm[i] = ppgData[i];
+                ppgData_std[i] = ppgData[i];
             }
+
+            standardize(ecgData_std, SAMPLES); // if we don't want standardization, comment this out
+            standardize(vReal, SAMPLES); // if we don't want standardization, comment this out
+            normalize(ppgData_norm);
+            standardize(ppgData_std, SAMPLES);
 
             // Perform FFT
             FFT.windowing(vReal, SAMPLES, FFT_WIN_TYP_HAMMING, FFT_FORWARD);
@@ -100,19 +113,6 @@ void FFTTask(void *parameter) {
             // Difference between median of FFT peaks and valleys
             diff_median = abs(peak_median - valley_median);
 
-            // PPG Features
-            float ppgData_norm[SAMPLES];
-            for (int i = 0; i < SAMPLES; i++) {
-                ppgData_norm[i] = ppgData[i];
-            }
-            normalize(ppgData_norm);
-
-            float ppgData_std[SAMPLES];
-            for (int i = 0; i < SAMPLES; i++) {
-                ppgData_std[i] = ppgData[i];
-            }
-            standardize(ppgData_std, SAMPLES);
-
             findPeaks_Noor(ppgData_norm, SAMPLES, ppg_peaks, ppg_peak_count, 0.3, 50, 0, 5, ppg_peaks_widths);
             float ppg_peaks_float[ppg_peak_count];
             for (int i = 0; i < ppg_peak_count; i++) {
@@ -127,12 +127,6 @@ void FFTTask(void *parameter) {
                 systolic_area = trapezoidal(peak_values, peak_count);
             }
 
-            float ecgData_std[SAMPLES];
-            for (int i = 0; i < SAMPLES; i++) {
-              ecgData_std[i] = ecgBuffer[i];
-
-            }
-            standardize(ecgData_std, SAMPLES); // if we don't want standardization, comment this out
             // ECG Time Domain Features
             findPeaks_Noor(ecgData_std, SAMPLES, time_peaks, time_peak_count, 1.5, 30, 0, 20, time_peaks_widths);
             findValleys_Noor(ecgData_std, SAMPLES, time_valleys, time_valley_count, -0.5, 30, 0, 20, time_valley_widths);
