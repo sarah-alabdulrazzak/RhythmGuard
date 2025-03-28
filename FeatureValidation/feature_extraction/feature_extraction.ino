@@ -94,8 +94,8 @@ void FFTTask(void *parameter) {
                 frequencies[i] = i * frequency_step;
                 magnitude[i] = vReal[i];
             }
-            findPeaks_Noor(magnitude, SAMPLES / 2, peaks, peak_count, 1, 10, 0, 10, peak_widths);
-            findValleys_Noor(magnitude, SAMPLES / 2, valleys, valley_count, 2, 10, 0, 0, valley_widths);
+            findPeaks_Noor(magnitude, SAMPLES / 2, peaks, peak_count, 0.005, 4, 0, 0, peak_widths);
+            findValleys_Noor(magnitude, SAMPLES / 2, valleys, valley_count, 2, 4, 0, 0, valley_widths);
             if (peak_count > 0) {
               float peak_values[peak_count];
               for (int i = 0; i < peak_count; i++) {
@@ -126,7 +126,7 @@ void FFTTask(void *parameter) {
 
             standardize(ppgData_std, SAMPLES);
 
-            findValleys_Noor(ppgData_std, SAMPLES, ppg_valleys, ppg_valley_count, 0.3, 50, 0, 5, ppg_valleys_widths);
+            findValleys_Noor(ppgData_std, SAMPLES, ppg_valleys, ppg_valley_count, 0.3, 20, 0, 5, ppg_valleys_widths);
             float ppg_valleys_float[ppg_valley_count];
             for (int i = 0; i < ppg_valley_count; i++) {
                 ppg_valleys_float[i] = float(ppg_valleys[i]);
@@ -143,7 +143,7 @@ void FFTTask(void *parameter) {
 
             // ECG Time Domain Features
             findPeaks_Noor(ecgData_std, SAMPLES, time_peaks, time_peak_count, 3, 30, 0, 20, time_peaks_widths);
-            findValleys_Noor(ecgData_std, SAMPLES, time_valleys, time_valley_count, -0.5, 30, 0, 20, time_valley_widths);
+            findValleys_Noor(ecgData_std, SAMPLES, time_valleys, time_valley_count, -1, 30, 0, 20, time_valley_widths);
             float time_valleys_float[time_valley_count];
             for (int i = 0; i < time_valley_count; i++) {
                 time_valleys_float[i] = float(time_valleys[i]);
