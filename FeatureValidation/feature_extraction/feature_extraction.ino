@@ -151,7 +151,7 @@ void FFTTask(void *parameter) {
             rr_median = float(calc_median_distance(time_peaks, time_peak_count));
             rr_std = float(calc_std_distance(time_peaks, time_peak_count));
 
-            int predicted_class = random_forest_predict(diastolic_time, rr_std, time_peak_count, rr_median, time_valley_count);
+            int predicted_class = random_forest_predict(peak_count, valley_count, rr_median, rr_std, diastolic_time);
 
             
             //Print FFT Results

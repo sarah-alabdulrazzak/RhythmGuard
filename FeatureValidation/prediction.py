@@ -4,7 +4,7 @@ import time
 import pandas as pd
 
 # Step 1: Configure Serial Communication
-esp32_port = "COM3"  # Change this to your ESP32's port
+esp32_port = "/dev/cu.usbserial-14110"  # Change this to your ESP32's port
 baud_rate = 115200
 SAMPLES = 1024  # Must match ESP32 SAMPLES
 timeout = 2  # Timeout for serial communication in seconds
@@ -17,7 +17,7 @@ except Exception as e:
     exit()
 
 # Step 2: Read ECG and PPG Data from CSV
-input_csv = "data/mimic_perform_non_af_004_data.csv"
+input_csv = "FeatureValidation/data/mimic_perform_non_af_003_data.csv"
 print(f"Reading ECG and PPG data from {input_csv}...")
 ecg_data = []
 ppg_data = []
