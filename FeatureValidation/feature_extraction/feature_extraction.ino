@@ -131,6 +131,7 @@ void FFTTask(void *parameter) {
             for (int i = 0; i < ppg_valley_count; i++) {
                 ppg_valleys_float[i] = float(ppg_valleys[i]);
             }
+
             diastolic_time = float(calc_median_distance(ppg_valleys_float, ppg_valley_count)) / SAMPLING_FREQUENCY;
             if (peak_count > 1) {
                 float peak_values[peak_count];
@@ -147,7 +148,7 @@ void FFTTask(void *parameter) {
             for (int i = 0; i < time_valley_count; i++) {
                 time_valleys_float[i] = float(time_valleys[i]);
             }
-            rr_median = float(calc_median_distance(time_valleys_float, time_peak_count));
+            rr_median = float(calc_median_distance(time_peaks, time_peak_count));
             rr_std = float(calc_std_distance(time_peaks, time_peak_count));
 
             int predicted_class = random_forest_predict(diastolic_time, rr_std, time_peak_count, rr_median, time_valley_count);
@@ -459,6 +460,21 @@ float calc_median_distance(float points[], int size) {
     float distances[size - 1];
     for (int i = 0; i < size - 1; i++) {
         distances[i] = points[i + 1] - points[i];
+    }
+    if ((size - 1) % 2 == 0) { // if even
+        return (distances[(size - 1) / 2] + distances[((size - 1) / 2) + 1]) / 2.0;
+    } else {
+        return distances[(size - 1) / 2];
+    }
+}
+
+float calc_median_distance(int points[], int size) {
+    if (size < 2) {
+        return 0;
+    }
+    float distances[size - 1];
+    for (int i = 0; i < size - 1; i++) {
+        distances[i] = float(points[i + 1] - points[i]);
     }
     if ((size - 1) % 2 == 0) { // if even
         return (distances[(size - 1) / 2] + distances[((size - 1) / 2) + 1]) / 2.0;
