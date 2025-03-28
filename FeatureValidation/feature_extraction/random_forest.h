@@ -4,6 +4,6 @@
 #include <vector> // Include necessary library
 using namespace std;
 
-int random_forest_predict(float diastolic_time, float rr_std, float num_peaks, float rr_median, float num_valleys);
+int random_forest_predict(float num_peaks, float num_valleys, float rr_median, float rr_std, float diastolic_time);
 
 #endif
