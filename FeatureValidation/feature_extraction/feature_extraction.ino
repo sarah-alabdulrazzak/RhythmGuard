@@ -126,7 +126,7 @@ void FFTTask(void *parameter) {
 
             standardize(ppgData_std, SAMPLES);
 
-            findPeaks_Noor(ppgData_std, SAMPLES, ppg_valleys, ppg_valley_count, 0.3, 50, 0, 5, ppg_valleys_widths);
+            findValleys_Noor(ppgData_std, SAMPLES, ppg_valleys, ppg_valley_count, 0.3, 50, 0, 5, ppg_valleys_widths);
             float ppg_valleys_float[ppg_valley_count];
             for (int i = 0; i < ppg_valley_count; i++) {
                 ppg_valleys_float[i] = float(ppg_valleys[i]);
