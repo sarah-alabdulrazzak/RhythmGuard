@@ -376,7 +376,7 @@ void findValleys_Noor(float x[], int size, int valleys[], int &valley_count,
     if(distance>0){
       if(valley_count>0 && i-valleys[valley_count-1]<distance){
         int prevValleyWeight=ctr+1;
-        valleys[valley_count]=int(floor(((valleys[valley_count-1]*(prevValleyWeight))+i)/(prevValleyWeight+1)));
+        valleys[valley_count-1]=int(floor(((valleys[valley_count-1]*(prevValleyWeight))+i)/(prevValleyWeight+1)));
         ctr++;
         continue;
       }
@@ -438,7 +438,7 @@ void findPeaks_Noor(float x[], int size, int peaks[], int &peak_count,
     if(distance>0){
       if(peak_count>0 && i-peaks[peak_count-1]<distance){
       int prevPeakWeight=ctr+1;
-      peaks[peak_count]=int(floor(((peaks[peak_count-1]*(prevPeakWeight))+i)/(prevPeakWeight+1)));
+      peaks[peak_count-1]=int(floor(((peaks[peak_count-1]*(prevPeakWeight))+i)/(prevPeakWeight+1)));
       ctr++;
       continue;
       }
