@@ -122,10 +122,10 @@ def send_data_to_esp32(data_type):
     global ser
     file_paths = {
         "healthy": r"healthy.csv",
-        "bradycardia": r"brady0.csv",
+        "bradycardia": r"brady1.csv",
         "tachycardia": r"tachy1.csv",
-        "afib": r"mimic_perform_af_012_data.csv",
-        "v_fib": r"v_fib3.csv",
+        "afib": r"mimic_perform_af_004_data.csv",
+        "v_fib": r"v_fib1.csv",
         "v_tachy": r"v_tachy4.csv"   
     }
     
@@ -138,7 +138,7 @@ def send_data_to_esp32(data_type):
     ppg_data = df["PPG"].values
 
     # Skip the first 5 chunks
-    skip_chunks = 5
+    skip_chunks = 0
     chunk_count = 0
 
     for i in range(0, len(ecg_data), SAMPLES):
@@ -320,7 +320,7 @@ port_combo.grid(row=len(buttons) + 2, column=0, pady=10, padx=10, sticky="ew")
 
 select_port = Button(center_frame, text='Connect', height=50, command=choose_port, bg='#e38fb3', fg='white', font=('Helvetica', 14, 'bold'), borderwidth=0, relief='flat')
 select_port.grid(row=len(buttons) + 3, column=0, pady=10, sticky="ew")
-stop_btn = Button(center_frame, text='stop', height=50, command=stop, bg='#e38fb3', fg='white', font=('Helvetica', 14, 'bold'), borderwidth=0, relief='flat')
+stop_btn = Button(center_frame, text='Stop', height=50, command=stop, bg='#e38fb3', fg='white', font=('Helvetica', 14, 'bold'), borderwidth=0, relief='flat')
 stop_btn.grid(row=len(buttons) + 4, column=0, pady=10, sticky="ew")
 connect = Label(center_frame, text='', font=('Helvetica', 10), bg='#de528f', fg='white', borderwidth=0, relief='flat')
 connect.grid(row=len(buttons) + 5, column=0, pady=10, sticky="ew")
